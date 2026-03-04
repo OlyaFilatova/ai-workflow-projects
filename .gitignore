@@ -4,3 +4,4 @@ build
 prompts
 prompt_outputs
 .DS_Store
+node_modules
