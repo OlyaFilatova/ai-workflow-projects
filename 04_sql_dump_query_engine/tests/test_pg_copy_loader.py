@@ -12,10 +12,12 @@ def test_pg_copy_fixture_loads_and_queries() -> None:
     stats = engine.load_dump(fixture)
 
     result = engine.query("SELECT id, payload FROM events ORDER BY id")
+    view_result = engine.query("SELECT id FROM v_events ORDER BY id")
 
     assert result.rows == [(1, "alpha"), (2, "beta"), (3, None)]
-    assert stats.executed_statements >= 2
-    assert any(warning.code == "skipped_construct" for warning in stats.warnings)
+    assert view_result.rows == [(1,), (2,), (3,)]
+    assert stats.executed_statements >= 3
+    assert not any(warning.code == "skipped_construct" for warning in stats.warnings)
 
 
 def test_pg_copy_unterminated_block_raises_parse_error() -> None:

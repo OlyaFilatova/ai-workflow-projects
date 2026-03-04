@@ -36,8 +36,12 @@ class SQLDumpQueryEngine:
 
 def _read_path_or_text(path_or_text: str) -> str:
     source = Path(path_or_text)
-    if source.exists():
-        return source.read_text(encoding="utf-8")
+    try:
+        if source.exists():
+            return source.read_text(encoding="utf-8")
+    except OSError:
+        # Raw SQL text can be long and invalid as a filesystem path.
+        return path_or_text
     return path_or_text
 
 

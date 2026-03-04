@@ -38,10 +38,11 @@ def parse_copy_row(raw_row: str) -> tuple[object, ...]:
 
     values: list[object] = []
     for token in raw_row.split("\t"):
-        if token == r"\N":
+        decoded = _decode_pg_token(token)
+        if decoded == r"\N":
             values.append(None)
         else:
-            values.append(_decode_pg_token(token))
+            values.append(decoded)
     return tuple(values)
 
 

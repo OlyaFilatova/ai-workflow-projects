@@ -74,3 +74,11 @@ def test_create_view_is_not_skipped() -> None:
 
     assert artifact.skipped is False
     assert artifact.sql.startswith('CREATE VIEW "v_users" AS SELECT')
+
+
+def test_detect_postgres_dialect_for_public_schema_create_table() -> None:
+    event = split_statements("CREATE TABLE public.logs (id integer, payload text);")[0]
+    artifact = translate_statement(event)
+
+    assert "public." not in artifact.sql.lower()
+    assert artifact.sql.startswith("CREATE TABLE logs")

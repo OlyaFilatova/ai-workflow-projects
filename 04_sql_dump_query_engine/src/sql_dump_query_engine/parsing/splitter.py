@@ -173,6 +173,12 @@ def _detect_dialect(statement: str) -> str:
     upper = statement.upper()
     if "`" in statement or "LOCK TABLES" in upper or "ENGINE=" in upper:
         return "mysql"
-    if "::" in statement or "PG_CATALOG" in upper:
+    if (
+        "::" in statement
+        or "PG_CATALOG" in upper
+        or "COPY " in upper
+        or "CREATE TABLE PUBLIC." in upper
+        or "CREATE VIEW PUBLIC." in upper
+    ):
         return "postgres"
     return "generic"

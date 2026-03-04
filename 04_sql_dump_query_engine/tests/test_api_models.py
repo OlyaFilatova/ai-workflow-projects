@@ -16,6 +16,15 @@ def test_load_dump_from_text_and_query() -> None:
     assert result.rows == [(1,), (2,)]
 
 
+def test_load_dump_from_long_text_is_not_treated_as_path() -> None:
+    large_comment = "x" * 320
+    dump = f"-- {large_comment}\nCREATE TABLE t_long (id INTEGER);\nINSERT INTO t_long VALUES (1);"
+    engine = load_dump(dump)
+    result = engine.query("SELECT id FROM t_long")
+
+    assert result.rows == [(1,)]
+
+
 def test_load_dump_from_path(tmp_path: Path) -> None:
     dump_file = tmp_path / "sample.sql"
     dump_file.write_text("CREATE TABLE items (id INTEGER);\nINSERT INTO items VALUES (7);", encoding="utf-8")
