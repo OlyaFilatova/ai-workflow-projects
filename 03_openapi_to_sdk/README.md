@@ -30,6 +30,7 @@ Current implementation status is **MVP / partial**. The tool follows `decisions.
   - non-2xx error mapping to typed error classes
 - CLI:
   - single `generate` command
+  - supports direct args (`--spec`, `--output`) and JSON config (`--config`)
   - deterministic output directory generation
   - `--overwrite` support
 
@@ -42,13 +43,15 @@ Current implementation status is **MVP / partial**. The tool follows `decisions.
 - Advanced discriminator-heavy nested composition support
 - Generic pagination abstractions
 - OAuth2 flow-specific generated behavior
-- Live end-to-end API integration tests
+- Broad live end-to-end API integration tests
 
 ## Known Limitations
 
 - YAML parsing currently depends on optional `PyYAML` availability.
 - Generated response model binding is currently strongest for direct schema-model mappings; complex union/list response model hydration is limited.
-- Runtime and generated code are tested extensively at unit level, but environment here lacked installed `ruff`, `mypy`, and `pytest` binaries to execute full quality gates in this session.
+- Generated tests are focused on generator/runtime behavior; full per-spec endpoint test-file generation is not implemented.
+- Remote refs are explicitly rejected in MVP.
+- In this environment, full quality gates (`ruff`, `mypy`, `pytest`) could not be executed because required modules were not installed.
 
 ## Installation
 
@@ -58,8 +61,26 @@ pip install -e .[dev]
 
 ## CLI Usage
 
+Direct arguments:
+
 ```bash
 openapi-to-sdk generate --spec ./openapi.json --output ./generated_sdk
+```
+
+With JSON config file:
+
+```bash
+openapi-to-sdk generate --config ./generator_config.json
+```
+
+Example config:
+
+```json
+{
+  "spec": "./openapi.json",
+  "output": "./generated_sdk",
+  "overwrite": true
+}
 ```
 
 Overwrite an existing non-empty output directory:

@@ -39,3 +39,8 @@
 - Decision: provide `scripts/quality_gates.sh` as canonical check runner.
 - Why: one command for syntax, lint, typing, and tests.
 - Tradeoff: checks depend on local tool installation and cannot run in bare environments without dev deps.
+
+## 9. Compliance gaps kept explicit
+- Decision: keep known MVP gaps documented rather than partially implementing risky behavior.
+- Why: avoids silent divergence from `SPEC.md` and keeps current behavior predictable.
+- Tradeoff: full endpoint-level generated test suite and some advanced response-model hydration remain future work.
