@@ -25,3 +25,11 @@ def test_unknown_type_translation_emits_lossy_warning() -> None:
 
     assert "TEXT" in artifact.sql
     assert any(w.code == "lossy_mapping" for w in artifact.warnings)
+
+
+def test_enum_translation_emits_lossy_warning() -> None:
+    event = split_statements("CREATE TABLE t (id INT, state ENUM('new','done'));")[0]
+    artifact = translate_statement(event)
+
+    assert "state TEXT" in artifact.sql
+    assert any(w.code == "lossy_mapping" for w in artifact.warnings)

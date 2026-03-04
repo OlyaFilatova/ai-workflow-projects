@@ -2,6 +2,24 @@
 
 Pure Python library for executing SQL queries directly against SQL dump files using DuckDB.
 
+## Quick Start
+
+```bash
+pip install -e .
+sqldump-query dump.sql --query "SELECT COUNT(*) FROM users"
+```
+
+Python API:
+
+```python
+from sql_dump_query_engine import load_dump
+
+engine = load_dump("dump.sql")
+result = engine.query("SELECT id, name FROM users ORDER BY id")
+print(result.columns)
+print(result.rows)
+```
+
 ## Status
 
 Working baseline implementation with:
@@ -35,10 +53,11 @@ CLI behavior:
   - handling of common dump directives/comments
 - PostgreSQL:
   - basic table/data ingestion
-  - dedicated parsing for `COPY ... FROM stdin` blocks
+  - dedicated parsing for `COPY ... FROM stdin` blocks with batch loading
 
 ## Unsupported / Limited
 
 - Views, triggers, procedures, functions are skipped with warnings.
 - PostgreSQL support is intentionally basic and not full dialect coverage.
+- Unsupported/unknown column types fallback to `TEXT` with lossy-mapping warnings.
 - Advanced dump constructs may fail with contextual errors.

@@ -9,6 +9,15 @@ TYPE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\\bJSONB\\b", re.IGNORECASE), "JSON"),
     (re.compile(r"\\bSERIAL\\b", re.IGNORECASE), "INTEGER"),
     (re.compile(r"\\bBIGSERIAL\\b", re.IGNORECASE), "BIGINT"),
+    (re.compile(r"\\bDATETIME\\b", re.IGNORECASE), "TIMESTAMP"),
+    (
+        re.compile(r"\\bTIMESTAMP\\s+WITHOUT\\s+TIME\\s+ZONE\\b", re.IGNORECASE),
+        "TIMESTAMP",
+    ),
+    (
+        re.compile(r"\\bTIMESTAMP\\s+WITH\\s+TIME\\s+ZONE\\b", re.IGNORECASE),
+        "TIMESTAMPTZ",
+    ),
 ]
 
 _KNOWN_TYPES = {
@@ -30,6 +39,7 @@ _KNOWN_TYPES = {
     "TEXT",
     "TIME",
     "TIMESTAMP",
+    "TIMESTAMPTZ",
     "VARCHAR",
 }
 
@@ -41,6 +51,19 @@ def normalize_type_tokens(sql: str) -> str:
     for pattern, replacement in TYPE_PATTERNS:
         normalized = pattern.sub(replacement, normalized)
     return normalized
+
+
+def apply_enum_fallback(sql: str) -> tuple[str, list[str]]:
+    """Map ENUM definitions to TEXT and emit lossy warnings."""
+
+    warnings: list[str] = []
+
+    def replace_enum(match: re.Match[str]) -> str:
+        warnings.append("ENUM mapped to TEXT")
+        return "TEXT"
+
+    translated = re.sub(r"\bENUM\s*\([^)]*\)", replace_enum, sql, flags=re.IGNORECASE)
+    return translated, warnings
 
 
 def apply_unknown_type_fallback(sql: str) -> tuple[str, list[str]]:

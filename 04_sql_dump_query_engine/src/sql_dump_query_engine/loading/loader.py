@@ -15,6 +15,7 @@ _INSERT_VALUES_RE = re.compile(
     r"^(INSERT\s+INTO\s+.+?\s+VALUES\s*)(.+?)(;?)$",
     re.IGNORECASE | re.DOTALL,
 )
+_COPY_BATCH_SIZE = 500
 
 
 def load_into_engine(engine: object, text: str) -> LoadStats:
@@ -26,8 +27,8 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
         stats.parsed_statements += 1
 
         if event.kind == "copy":
-            _load_copy_event(engine, event)
-            stats.executed_statements += 1
+            copy_chunks = _load_copy_event(engine, event)
+            stats.executed_statements += copy_chunks
             continue
 
         artifact = translate_statement(event)
@@ -52,27 +53,32 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
     return stats
 
 
-def _load_copy_event(engine: object, event: ParseEvent) -> None:
+def _load_copy_event(engine: object, event: ParseEvent) -> int:
     if event.copy_rows is None:
-        return
+        return 0
 
     header = parse_copy_header(event.statement.text)
     if not event.copy_rows:
-        return
+        return 0
 
     rows = [parse_copy_row(raw) for raw in event.copy_rows]
     placeholders = ", ".join("?" for _ in header.columns)
     column_sql = ", ".join(header.columns)
     insert_sql = f"INSERT INTO {header.table} ({column_sql}) VALUES ({placeholders})"
 
+    executed = 0
     try:
-        getattr(engine, "executemany")(insert_sql, rows)
+        for idx in range(0, len(rows), _COPY_BATCH_SIZE):
+            chunk = rows[idx : idx + _COPY_BATCH_SIZE]
+            getattr(engine, "executemany")(insert_sql, chunk)
+            executed += 1
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
             "Failed to load PostgreSQL COPY block. Check COPY column order and value types.",
             statement_line=event.statement.line,
             statement_text=event.statement.text,
         ) from exc
+    return executed
 
 
 def _batch_insert_statement(sql: str, batch_size: int) -> list[str]:
