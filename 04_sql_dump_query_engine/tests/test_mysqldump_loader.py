@@ -4,7 +4,7 @@ from sql_dump_query_engine.api import SQLDumpQueryEngine
 
 
 def test_mysqldump_fixture_loads_and_queries() -> None:
-    fixture = Path("tests/fixtures_mysqldump.sql").read_text(encoding="utf-8")
+    fixture = Path("tests/fixtures/mysqldump_primary.sql").read_text(encoding="utf-8")
     engine = SQLDumpQueryEngine()
     stats = engine.load_dump(fixture)
 
@@ -29,3 +29,14 @@ def test_unsupported_constructs_are_skipped_with_warnings() -> None:
 
     assert result.rows == [(1,)]
     assert any("unsupported" in warning.message.lower() for warning in stats.warnings)
+
+
+def test_unknown_mysql_type_falls_back_to_text_with_warning() -> None:
+    fixture = Path("tests/fixtures/mysqldump_unknown_type.sql").read_text(encoding="utf-8")
+    engine = SQLDumpQueryEngine()
+    stats = engine.load_dump(fixture)
+
+    result = engine.query("SELECT meta FROM devices ORDER BY id")
+
+    assert result.rows == [("point-a",), ("point-b",)]
+    assert any(warning.code == "lossy_mapping" for warning in stats.warnings)

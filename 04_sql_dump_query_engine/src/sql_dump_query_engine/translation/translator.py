@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from ..models import ParseEvent, TranslationArtifact, WarningEvent
-from .mapper import normalize_type_tokens
+from .mapper import apply_unknown_type_fallback, normalize_type_tokens
 
 _UNSUPPORTED_PREFIXES = (
     "CREATE VIEW",
@@ -64,6 +64,10 @@ def translate_statement(event: ParseEvent) -> TranslationArtifact:
         translated = _translate_postgres(translated)
 
     translated = normalize_type_tokens(translated)
+    translated, lossy_messages = apply_unknown_type_fallback(translated)
+    for message in lossy_messages:
+        warnings.append(WarningEvent(code="lossy_mapping", message=message, line=original.line))
+
     return TranslationArtifact(original=original, sql=translated, skipped=False, warnings=warnings)
 
 
