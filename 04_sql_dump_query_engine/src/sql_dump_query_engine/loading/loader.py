@@ -40,6 +40,7 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
 
         try:
             for statement_sql in _batch_insert_statement(artifact.sql, batch_size=500):
+                # TODO: consider using interface for dependency inversion
                 getattr(engine, "execute")(statement_sql)
                 stats.executed_statements += 1
         except Exception as exc:  # pragma: no cover - backend error surface

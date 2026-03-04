@@ -45,6 +45,14 @@ CLI behavior:
 - Non-zero exit code on load/query failures.
 - Error output includes contextual statement details when available.
 
+## Usage and Security Notes
+
+- Treat dump files as executable SQL input. Load only trusted dumps.
+- Treat `query(sql)` and `--query` as raw SQL execution. Do not pass untrusted user input directly.
+- If you build queries from user input, use parameterized SQL in your own wrapper layer and strict allowlists for identifiers (table/column names).
+- For shared or multi-tenant environments, consider allowing only read-only `SELECT` queries and blocking mutating statements (`INSERT`, `UPDATE`, `DELETE`, `DROP`, etc.).
+- This tool is designed for local analysis workflows, not as a hardened SQL sandbox for untrusted users.
+
 ## Supported Features
 
 - mysqldump:

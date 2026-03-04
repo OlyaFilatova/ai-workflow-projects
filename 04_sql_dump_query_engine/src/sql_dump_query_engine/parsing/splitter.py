@@ -168,7 +168,7 @@ def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
 
     return events
 
-
+# TODO: Use correct return type
 def _detect_dialect(statement: str) -> str:
     upper = statement.upper()
     if "`" in statement or "LOCK TABLES" in upper or "ENGINE=" in upper:
