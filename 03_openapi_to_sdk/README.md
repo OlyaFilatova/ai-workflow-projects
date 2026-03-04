@@ -30,7 +30,7 @@ Current implementation status is **MVP / partial**. The tool follows `decisions.
   - non-2xx error mapping to typed error classes
 - CLI:
   - single `generate` command
-  - supports direct args (`--spec`, `--output`) and JSON config (`--config`)
+  - supports direct args (`--spec`, `--output`)
   - deterministic output directory generation
   - `--overwrite` support
 
@@ -65,22 +65,6 @@ Direct arguments:
 
 ```bash
 openapi-to-sdk generate --spec ./openapi.json --output ./generated_sdk
-```
-
-With JSON config file:
-
-```bash
-openapi-to-sdk generate --config ./generator_config.json
-```
-
-Example config:
-
-```json
-{
-  "spec": "./openapi.json",
-  "output": "./generated_sdk",
-  "overwrite": true
-}
 ```
 
 Overwrite an existing non-empty output directory:

@@ -103,23 +103,6 @@ def test_cli_overwrite_behavior(tmp_path: Path, capsys) -> None:
     assert third_exit == 0
 
 
-def test_cli_supports_config_file(tmp_path: Path, capsys) -> None:
-    spec = tmp_path / "spec.json"
-    out = tmp_path / "out"
-    config = tmp_path / "config.json"
-    _write_spec(spec)
-    config.write_text(
-        json.dumps({"spec": str(spec), "output": str(out), "overwrite": True}),
-        encoding="utf-8",
-    )
-
-    exit_code = main(["generate", "--config", str(config)])
-    captured = capsys.readouterr()
-
-    assert exit_code == 0
-    assert "Generated SDK into:" in captured.out
-
-
 def test_generation_is_idempotent(tmp_path: Path) -> None:
     spec = tmp_path / "spec.json"
     out_a = tmp_path / "out_a"
