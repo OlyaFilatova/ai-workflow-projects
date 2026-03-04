@@ -1,106 +1,41 @@
-Non-negotiable decisions for project generation:
+# Architectural and Scope Decisions
 
-- supported formats: HTML, MD, DOCX
-- The project must NOT implement:
-    * Visual formatting comparison (fonts, colors, layout, margins)
-    * Screenshot or pixel-based comparison
-    * PDF support
-    * Embedded image similarity detection
-    * OCR
-    * Track changes / revision history diff
-    * Full XML metadata diff
-    * Semantic/NLP-based similarity detection
-    * Move detection (reordering = remove + add)
-    * Advanced table semantics (column reorder detection, style comparison)
-    * Performance optimization for very large documents
+## Scope Control
+- Chosen v1 formats: Markdown, HTML, DOCX.
+- Explicitly excluded PDF, OCR, visual diffs, semantic similarity, CLI, and advanced table/move detection.
+- Rationale: deliver a robust constrained core instead of broad shallow coverage.
 
-- Strict code separation rules:
-    * `model` contains only dataclasses.
-    * `parsers` convert input → NDM.
-    * `diff` operates only on NDM.
-    * `renderers` operate only on `DiffResult`.
-    * No circular imports.
+## Data Model
+- All core model objects are dataclasses in `docdiff.model`.
+- NDM uses ordered block list with deterministic `block_id` and `index`.
+- Rationale: deterministic behavior and simple serialization contracts.
 
-- Normalized Document Model (NDM)
-    * Document - ordered list of blocks
+## Parsing Strategy
+- Each parser maps source documents directly into NDM.
+- Shared normalization utility applies Unicode NFC and whitespace normalization.
+- DOCX list support uses style-based best-effort classification.
+- Rationale: maintain consistency across formats while acknowledging parser limitations.
 
-    * Block types: HeadingBlock, ParagraphBlock, ListBlock, TableBlock, ImageBlock
-    * Rules:
-        * Preserve order
-        * Normalize whitespace
-        * Normalize Unicode (NFC)
-        * Strip noise in HTML
-        * Stable deterministic block IDs
-        * Fully JSON-serializable
-        * Use Python dataclasses + type hints
+## Diff Strategy
+- Diff engine compares NDM only.
+- Uses block-level sequence alignment plus optional word-level token diffs.
+- Reordering is represented as remove + add (no move detection).
+- Rationale: clear behavior aligned to constraints and easy to reason about in tests.
 
-- Adding a new format must require:
-    * Adding new parser file
-    * Registering it
+## Rendering
+- `TextRenderer` consumes only `DiffResult`.
+- Marker format:
+  - `+` added
+  - `-` removed
+  - `~` modified
+  - `=` equal
+- Rationale: deterministic and human-readable output with minimal coupling.
 
-- Diff strategy - Two-stage hierarchical diff: Block and word levels
-    * Granularity
-        * "block"
-        * "block+word" (default)
-        * "word"
-    * Tables - No column reorder detection
+## Quality and Testing
+- Added tests for serialization, per-format parsing, diff behaviors, renderer output, and integration/cross-format scenarios.
+- Fixtures use realistic multi-paragraph content and generated DOCX samples.
+- Rationale: verify behavior by contract and reduce regression risk.
 
-- Implement `TextRenderer`:
-    * `+` added
-    * `-` removed
-    * `~` modified
-    * Rendering must be separate from diff logic.
-
-- Testing Strategy
-    * Use pytest.
-    * Tests must cover:
-        * Model serialization
-        * Parser correctness (each format)
-        * Block diff
-        * Word diff
-        * Table diff
-        * Renderer output. Must cover all variants, ex.: added, removed, modified, equal.
-        * Cross-format diff (e.g., Markdown vs HTML equivalent content)
-    * diff tests must cover all variants, ex.: added, removed, modified, equal.
-    * Tests must use realistic multi-paragraph content.
-    * DOCX fixtures may be generated programmatically in tests.
-
-- Use `pyproject.toml` (PEP 621).
-
-- Requirements:
-
-    * Python >= 3.11
-    * Dependencies:
-
-    * python-docx
-    * beautifulsoup4
-    * markdown-it-py
-    * Dev dependencies:
-    * pytest
-
-- Do NOT add CLI entrypoint.
-
-- README must include:
-
-    * Overview
-    * Supported formats
-    * Explicit exclusions
-    * Architecture explanation
-    * NDM description
-    * Diff strategy explanation
-    * Usage examples
-    * Limitations per format
-    * Testing instructions
-    * Extending instructions
-
-- Documentation must not overclaim capabilities.
-
-- Code Quality Requirements
-    * Python 3.11+
-    * Full type hints
-    * Dataclasses for data models
-    * Clear docstrings for public classes/functions
-    * No unused imports
-    * Deterministic behavior
-    * No global state
-    * Follows PEP-8
+## Documentation Principle
+- Documentation intentionally avoids overclaiming unsupported features.
+- Known limitations are documented in README.
