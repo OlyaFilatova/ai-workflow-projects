@@ -16,7 +16,7 @@ class ParsedModel:
     name: str
 
     @classmethod
-    def model_validate(cls, payload: dict[str, str]) -> "ParsedModel":
+    def model_validate(cls, payload: dict[str, str]) -> ParsedModel:
         return cls(name=payload["name"])
 
 
@@ -25,7 +25,7 @@ class ParsedError:
     code: str
 
     @classmethod
-    def model_validate(cls, payload: dict[str, str]) -> "ParsedError":
+    def model_validate(cls, payload: dict[str, str]) -> ParsedError:
         return cls(code=payload["code"])
 
 

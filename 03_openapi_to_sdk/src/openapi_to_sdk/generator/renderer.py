@@ -74,6 +74,7 @@ def _build_environment() -> Environment:
         lstrip_blocks=True,
         undefined=StrictUndefined,
     )
+    env.globals["render_field_declaration"] = _render_field_declaration
     return env
 
 
@@ -95,6 +96,17 @@ def _field_to_template(field: FieldIR) -> _TemplateField:
         required=field.required,
         alias=alias,
     )
+
+
+def _render_field_declaration(field: _TemplateField) -> str:
+    declaration = f"    {field.name}: {field.type_hint}"
+    if field.alias and field.required:
+        declaration += f' = Field(alias="{field.alias}")'
+    elif field.alias and not field.required:
+        declaration += f' = Field(default=None, alias="{field.alias}")'
+    elif not field.required:
+        declaration += " = None"
+    return declaration + "\n"
 
 
 def _operation_to_template(operation: OperationIR, schema_names: set[str]) -> _TemplateOperation:

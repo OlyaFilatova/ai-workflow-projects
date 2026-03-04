@@ -1,26 +1,31 @@
 from __future__ import annotations
 
-{% if typing_imports %}from typing import {{ typing_imports | join(", ") }}
-{% endif %}{% if stdlib_imports %}from datetime import {{ stdlib_imports | join(", ") }}
-{% endif %}from pydantic import BaseModel, ConfigDict, Field
+{% if typing_imports -%}
+from typing import {{ typing_imports | join(", ") }}
 
-{% from "model_macros.j2" import render_field %}
-{% for schema in schemas %}
-{% if schema.kind == "model" %}
+{% endif -%}
+{% if stdlib_imports -%}
+from datetime import {{ stdlib_imports | join(", ") }}
+
+{% endif -%}
+from pydantic import BaseModel, ConfigDict, Field
+
+{% for schema in schemas -%}
+{% if schema.kind == "model" -%}
 class {{ schema.name }}(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
-{% if schema.fields %}
-{% for field in schema.fields %}
-{{ render_field(field) }}
-{% endfor %}
+{% if schema.fields -%}
+{% for field in schema.fields -%}
+{{ render_field_declaration(field) -}}
+{% endfor -%}
 {% else %}
     pass
 {% endif %}
 
-{% elif schema.kind == "enum" %}
+{% elif schema.kind == "enum" -%}
 {{ schema.name }} = {{ schema.type_hint }}
 
-{% elif schema.kind == "alias" %}
+{% elif schema.kind == "alias" -%}
 {{ schema.name }} = {{ schema.type_hint }}
 
 {% endif %}
