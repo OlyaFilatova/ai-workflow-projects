@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from auditpy.config import ScanConfig
+from auditpy.licenses import evaluate_licenses
+from auditpy.models import Report
+from auditpy.reporting import render_cli_summary, threshold_violated, write_json_report
+from auditpy.resolution import resolve_dependencies
+from auditpy.vulnerabilities import scan_vulnerabilities
 
 
 def _parse_policy(value: str) -> str:
@@ -29,7 +35,6 @@ def build_parser() -> argparse.ArgumentParser:
         default="high",
         help="Fail threshold for vulnerability severities",
     )
-    scan_parser.add_argument("--cache-ttl-hours", type=int, default=24, help="OSV cache TTL in hours")
     scan_parser.add_argument("--verbose", action="store_true", help="Enable verbose logs")
     scan_parser.set_defaults(func=_run_scan)
 
@@ -37,13 +42,48 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _run_scan(args: argparse.Namespace) -> int:
-    # Configuration validation is centralized in ScanConfig.
-    ScanConfig.create(
+    cfg = ScanConfig.create(
         policy=args.policy,
         fail_on=args.fail_on,
-        cache_ttl_hours=args.cache_ttl_hours,
+        cache_ttl_hours=24,
         verbose=args.verbose,
     )
+
+    resolution = resolve_dependencies(args.requirements)
+    if not resolution.ok:
+        assert resolution.error is not None
+        print(f"Runtime error: {resolution.error.message}", file=sys.stderr)
+        return resolution.error.exit_code
+
+    vuln_result = scan_vulnerabilities(
+        resolution.nodes,
+        resolution.dependency_paths,
+        cache_ttl_hours=cfg.cache_ttl_hours,
+    )
+    license_result = evaluate_licenses(
+        resolution.distributions,
+        resolution.dependency_paths,
+        policy=cfg.policy,
+    )
+
+    report = Report(
+        python_version=sys.version.split()[0],
+        nodes=resolution.nodes,
+        edges=resolution.edges,
+        vulnerabilities=vuln_result.findings,
+        licenses=license_result.findings,
+    )
+
+    if args.json_path:
+        write_json_report(report, args.json_path)
+
+    print(render_cli_summary(report))
+
+    for warning in [*resolution.warnings, *vuln_result.warnings, *license_result.warnings]:
+        print(f"warning: {warning}", file=sys.stderr)
+
+    if threshold_violated(report, fail_on=cfg.fail_on):
+        return 1
     return 0
 
 

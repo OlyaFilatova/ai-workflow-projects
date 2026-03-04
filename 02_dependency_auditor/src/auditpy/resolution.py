@@ -33,6 +33,7 @@ class ResolutionOutcome:
     nodes: list[PackageNode] = field(default_factory=list)
     edges: list[DependencyEdge] = field(default_factory=list)
     dependency_paths: dict[str, list[list[str]]] = field(default_factory=dict)
+    distributions: list[dict[str, object]] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     error: ResolutionFailure | None = None
 
@@ -71,7 +72,7 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
 
     edges, adjacency = _build_edges(installed)
     nodes = sorted(
-        (PackageNode(name=item["name"], version=item["version"]) for item in installed),
+        (PackageNode(name=str(item["name"]), version=str(item["version"])) for item in installed),
         key=lambda node: (node.name.lower(), node.version),
     )
     dependency_paths = _build_paths(root_names, adjacency)
@@ -80,6 +81,7 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
         nodes=nodes,
         edges=edges,
         dependency_paths=dependency_paths,
+        distributions=installed,
         warnings=parsed.warnings,
     )
 
@@ -116,13 +118,16 @@ def _collect_installed_distributions(python_bin: Path) -> list[dict[str, object]
         "from importlib import metadata\n"
         "items=[]\n"
         "for dist in metadata.distributions():\n"
-        "    name = dist.metadata.get('Name') or dist.metadata.get('Summary')\n"
+        "    name = dist.metadata.get('Name')\n"
         "    if not name:\n"
         "        continue\n"
+        "    classifiers = dist.metadata.get_all('Classifier') or []\n"
         "    items.append({\n"
         "      'name': name,\n"
         "      'version': dist.version,\n"
         "      'requires': list(dist.requires or []),\n"
+        "      'license': dist.metadata.get('License'),\n"
+        "      'classifiers': classifiers,\n"
         "    })\n"
         "print(json.dumps(items))\n"
     )
