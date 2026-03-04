@@ -53,7 +53,16 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
             )
         )
 
-    parsed = parse_requirements(str(req_path))
+    try:
+        parsed = parse_requirements(str(req_path))
+    except Exception as exc:
+        return ResolutionOutcome(
+            error=ResolutionFailure(
+                category="runtime",
+                message=f"Requirements parsing failed: {exc}",
+            )
+        )
+
     root_names = [req.normalized_name for req in parsed.requirements]
 
     try:

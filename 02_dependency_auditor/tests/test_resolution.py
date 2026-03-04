@@ -47,6 +47,21 @@ class ResolutionTest(unittest.TestCase):
         self.assertIn("requests", outcome.dependency_paths)
         self.assertIn(["requests", "urllib3"], outcome.dependency_paths.get("urllib3", []))
 
+    @mock.patch("auditpy.resolution._pip_install_requirements")
+    @mock.patch("auditpy.resolution._create_venv")
+    def test_pip_install_failure_is_runtime_error(self, _mock_venv, mock_pip) -> None:
+        mock_pip.side_effect = RuntimeError("Dependency resolution failed: network unavailable")
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            req_file = Path(tmp_dir) / "requirements.txt"
+            req_file.write_text("requests>=2\n", encoding="utf-8")
+            outcome = resolve_dependencies(str(req_file))
+
+        self.assertFalse(outcome.ok)
+        assert outcome.error is not None
+        self.assertEqual(outcome.error.category, "runtime")
+        self.assertIn("network unavailable", outcome.error.message)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -46,6 +46,16 @@ class ParsingTest(unittest.TestCase):
             ):
                 parse_requirements(str(req_file))
 
+    def test_malformed_requirement_has_file_and_line(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            req_file = Path(tmp_dir) / "requirements.txt"
+            req_file.write_text("bad requirement @@@\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(RequirementsParseError, "invalid requirement") as ctx:
+                parse_requirements(str(req_file))
+
+        self.assertIn("requirements.txt:1", str(ctx.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
