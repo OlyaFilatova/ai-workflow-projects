@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-
 Dialect = Literal["mysql", "postgres", "generic"]
 WarningCode = Literal["skipped_construct", "lossy_mapping", "empty_statement"]
 

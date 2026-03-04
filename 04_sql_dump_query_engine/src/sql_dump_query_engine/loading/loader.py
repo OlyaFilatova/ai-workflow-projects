@@ -41,7 +41,7 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
         try:
             for statement_sql in _batch_insert_statement(artifact.sql, batch_size=500):
                 # TODO: consider using interface for dependency inversion
-                getattr(engine, "execute")(statement_sql)
+                engine.execute(statement_sql)
                 stats.executed_statements += 1
         except Exception as exc:  # pragma: no cover - backend error surface
             raise LoadError(
@@ -71,7 +71,7 @@ def _load_copy_event(engine: object, event: ParseEvent) -> int:
     try:
         for idx in range(0, len(rows), _COPY_BATCH_SIZE):
             chunk = rows[idx : idx + _COPY_BATCH_SIZE]
-            getattr(engine, "executemany")(insert_sql, chunk)
+            engine.executemany(insert_sql, chunk)
             executed += 1
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
