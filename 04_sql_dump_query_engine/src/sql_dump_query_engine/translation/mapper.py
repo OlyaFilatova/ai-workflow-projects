@@ -5,19 +5,26 @@ from __future__ import annotations
 import re
 
 TYPE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    (re.compile(r"\\bTINYINT\\s*\\(\\s*1\\s*\\)\\b", re.IGNORECASE), "BOOLEAN"),
-    (re.compile(r"\\bJSONB\\b", re.IGNORECASE), "JSON"),
-    (re.compile(r"\\bSERIAL\\b", re.IGNORECASE), "INTEGER"),
-    (re.compile(r"\\bBIGSERIAL\\b", re.IGNORECASE), "BIGINT"),
-    (re.compile(r"\\bDATETIME\\b", re.IGNORECASE), "TIMESTAMP"),
+    (re.compile(r"\bTINYINT\s*\(\s*1\s*\)\s+UNSIGNED\b", re.IGNORECASE), "BOOLEAN"),
+    (re.compile(r"\bBIGINT\s+UNSIGNED\b", re.IGNORECASE), "UBIGINT"),
+    (re.compile(r"\b(?:INT|INTEGER|MEDIUMINT)\s+UNSIGNED\b", re.IGNORECASE), "UINTEGER"),
+    (re.compile(r"\bSMALLINT\s+UNSIGNED\b", re.IGNORECASE), "USMALLINT"),
+    (re.compile(r"\bTINYINT\s+UNSIGNED\b", re.IGNORECASE), "UTINYINT"),
+    (re.compile(r"\bMEDIUMINT\b", re.IGNORECASE), "INTEGER"),
+    (re.compile(r"\bTINYINT\s*\(\s*1\s*\)\b", re.IGNORECASE), "BOOLEAN"),
+    (re.compile(r"\bJSONB\b", re.IGNORECASE), "JSON"),
+    (re.compile(r"\bSERIAL\b", re.IGNORECASE), "INTEGER"),
+    (re.compile(r"\bBIGSERIAL\b", re.IGNORECASE), "BIGINT"),
+    (re.compile(r"\bDATETIME\b", re.IGNORECASE), "TIMESTAMP"),
     (
-        re.compile(r"\\bTIMESTAMP\\s+WITHOUT\\s+TIME\\s+ZONE\\b", re.IGNORECASE),
+        re.compile(r"\bTIMESTAMP\s+WITHOUT\s+TIME\s+ZONE\b", re.IGNORECASE),
         "TIMESTAMP",
     ),
     (
-        re.compile(r"\\bTIMESTAMP\\s+WITH\\s+TIME\\s+ZONE\\b", re.IGNORECASE),
+        re.compile(r"\bTIMESTAMP\s+WITH\s+TIME\s+ZONE\b", re.IGNORECASE),
         "TIMESTAMPTZ",
     ),
+    (re.compile(r"\bUNSIGNED\b", re.IGNORECASE), ""),
 ]
 
 _KNOWN_TYPES = {
@@ -40,6 +47,10 @@ _KNOWN_TYPES = {
     "TIME",
     "TIMESTAMP",
     "TIMESTAMPTZ",
+    "UBIGINT",
+    "UINTEGER",
+    "USMALLINT",
+    "UTINYINT",
     "VARCHAR",
 }
 

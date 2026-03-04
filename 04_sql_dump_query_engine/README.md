@@ -57,7 +57,10 @@ CLI behavior:
 
 - mysqldump:
   - `CREATE TABLE`
+  - basic `CREATE VIEW`
   - `INSERT INTO ... VALUES ...` (including multi-row batching)
+  - MySQL `UNSIGNED` integer types mapped to DuckDB unsigned integer types
+  - `UNIQUE KEY` normalization and compatibility handling for inline table key clauses
   - handling of common dump directives/comments
 - PostgreSQL:
   - basic table/data ingestion
@@ -65,7 +68,7 @@ CLI behavior:
 
 ## Unsupported / Limited
 
-- Views, triggers, procedures, functions are skipped with warnings.
+- Triggers, procedures, and functions are skipped with warnings.
 - PostgreSQL support is intentionally basic and not full dialect coverage.
 - Unsupported/unknown column types fallback to `TEXT` with lossy-mapping warnings.
 - Advanced dump constructs may fail with contextual errors.

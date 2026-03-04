@@ -9,9 +9,11 @@ def test_mysqldump_fixture_loads_and_queries() -> None:
     stats = engine.load_dump(fixture)
 
     result = engine.query("SELECT id, name, active FROM users ORDER BY id")
+    view_result = engine.query("SELECT id, name FROM active_users ORDER BY id")
 
     assert [row[0] for row in result.rows] == [1, 2, 3]
     assert result.rows[2][1] == "Eve; Mallory"
+    assert view_result.rows == [(1, "Alice"), (3, "Eve; Mallory")]
     assert stats.executed_statements >= 2
     assert any(event.code == "skipped_construct" for event in stats.warnings)
 
@@ -40,3 +42,26 @@ def test_unknown_mysql_type_falls_back_to_text_with_warning() -> None:
 
     assert result.rows == [("point-a",), ("point-b",)]
     assert any(warning.code == "lossy_mapping" for warning in stats.warnings)
+
+
+def test_mysql_create_table_key_clauses_do_not_break_load() -> None:
+    dump = """
+    CREATE TABLE `items` (
+      `id` INT UNSIGNED NOT NULL,
+      `email` VARCHAR(255) NOT NULL,
+      `group_id` INT,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uq_items_email` (`email`),
+      KEY `idx_group_id` (`group_id`)
+    ) ENGINE=InnoDB;
+    INSERT INTO `items` (`id`, `email`, `group_id`) VALUES
+      (1, 'a@example.com', 10),
+      (2, 'b@example.com', 10);
+    """
+    engine = SQLDumpQueryEngine()
+    stats = engine.load_dump(dump)
+
+    result = engine.query("SELECT id, email FROM items ORDER BY id")
+
+    assert stats.executed_statements >= 2
+    assert result.rows == [(1, "a@example.com"), (2, "b@example.com")]

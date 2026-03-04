@@ -33,3 +33,44 @@ def test_enum_translation_emits_lossy_warning() -> None:
 
     assert "state TEXT" in artifact.sql
     assert any(w.code == "lossy_mapping" for w in artifact.warnings)
+
+
+def test_mysql_unsigned_types_are_mapped_to_duckdb_unsigned() -> None:
+    event = split_statements(
+        "CREATE TABLE t (a INT UNSIGNED, b BIGINT UNSIGNED, c SMALLINT UNSIGNED, d TINYINT UNSIGNED);"
+    )[0]
+    artifact = translate_statement(event)
+
+    assert "a UINTEGER" in artifact.sql
+    assert "b UBIGINT" in artifact.sql
+    assert "c USMALLINT" in artifact.sql
+    assert "d UTINYINT" in artifact.sql
+    assert "UNSIGNED" not in artifact.sql.upper()
+
+
+def test_mysql_table_key_clauses_are_rewritten_for_duckdb() -> None:
+    event = split_statements(
+        """
+        CREATE TABLE `items` (
+          `id` INT NOT NULL,
+          `email` VARCHAR(255) NOT NULL,
+          `group_id` INT,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uq_items_email` (`email`),
+          KEY `idx_group_id` (`group_id`)
+        );
+        """
+    )[0]
+    artifact = translate_statement(event)
+
+    assert "UNIQUE (" in artifact.sql
+    assert "UNIQUE KEY" not in artifact.sql.upper()
+    assert ", KEY " not in artifact.sql.upper()
+
+
+def test_create_view_is_not_skipped() -> None:
+    event = split_statements("CREATE VIEW `v_users` AS SELECT `id` FROM `users`;")[0]
+    artifact = translate_statement(event)
+
+    assert artifact.skipped is False
+    assert artifact.sql.startswith('CREATE VIEW "v_users" AS SELECT')

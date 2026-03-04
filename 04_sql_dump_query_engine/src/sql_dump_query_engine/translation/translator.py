@@ -8,7 +8,6 @@ from ..models import ParseEvent, TranslationArtifact, WarningEvent
 from .mapper import apply_enum_fallback, apply_unknown_type_fallback, normalize_type_tokens
 
 _UNSUPPORTED_PREFIXES = (
-    "CREATE VIEW",
     "CREATE TRIGGER",
     "CREATE FUNCTION",
     "CREATE PROCEDURE",
@@ -86,13 +85,83 @@ def _translate_mysql(sql: str) -> str:
 
     translated = re.sub(r"\bAUTO_INCREMENT\s*=\s*\d+\b", "", translated, flags=re.IGNORECASE)
     translated = re.sub(r"\bAUTO_INCREMENT\b", "", translated, flags=re.IGNORECASE)
-    translated = re.sub(r"\bUNSIGNED\b", "", translated, flags=re.IGNORECASE)
+    translated = _rewrite_mysql_create_table_indexes(translated)
     translated = re.sub(r"\bCHARACTER\s+SET\s+\w+\b", "", translated, flags=re.IGNORECASE)
     translated = re.sub(r"\bCOLLATE\s+\w+\b", "", translated, flags=re.IGNORECASE)
     translated = re.sub(r"\s+", " ", translated)
     translated = translated.replace(" ,", ",")
 
     return translated.strip()
+
+
+def _rewrite_mysql_create_table_indexes(sql: str) -> str:
+    stripped_upper = sql.strip().upper()
+    if not stripped_upper.startswith("CREATE TABLE"):
+        return sql
+
+    open_idx = sql.find("(")
+    close_idx = sql.rfind(")")
+    if open_idx == -1 or close_idx == -1 or close_idx <= open_idx:
+        return sql
+
+    body = sql[open_idx + 1 : close_idx]
+    definitions = _split_definitions(body)
+    rewritten: list[str] = []
+
+    for definition in definitions:
+        candidate = definition.strip()
+        if not candidate:
+            continue
+
+        upper = candidate.upper()
+        if upper.startswith("UNIQUE KEY") or upper.startswith("UNIQUE INDEX"):
+            rewritten.append(_rewrite_unique_key_definition(candidate))
+            continue
+
+        if upper.startswith("KEY ") or upper.startswith("INDEX "):
+            continue
+
+        rewritten.append(definition)
+
+    if not rewritten:
+        return sql
+
+    new_body = ",\n".join(segment.strip("\n") for segment in rewritten)
+    return f"{sql[:open_idx + 1]}\n{new_body}\n{sql[close_idx:]}"
+
+
+def _rewrite_unique_key_definition(definition: str) -> str:
+    match = re.match(
+        r'^\s*UNIQUE\s+(?:KEY|INDEX)(?:\s+(?:"[^"]+"|[A-Za-z_][\w$]*))?\s*\((?P<columns>.+)\)\s*(?:USING\s+\w+)?\s*$',
+        definition,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return definition
+    return f"UNIQUE ({match.group('columns').strip()})"
+
+
+def _split_definitions(body: str) -> list[str]:
+    parts: list[str] = []
+    start = 0
+    depth = 0
+    in_single = False
+    in_double = False
+    for idx, char in enumerate(body):
+        if char == "'" and not in_double:
+            in_single = not in_single
+        elif char == '"' and not in_single:
+            in_double = not in_double
+        elif not in_single and not in_double:
+            if char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+            elif char == "," and depth == 0:
+                parts.append(body[start:idx])
+                start = idx + 1
+    parts.append(body[start:])
+    return parts
 
 
 def _translate_postgres(sql: str) -> str:

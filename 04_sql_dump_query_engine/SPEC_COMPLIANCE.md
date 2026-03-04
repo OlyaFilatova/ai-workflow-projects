@@ -23,12 +23,13 @@ Status: Met.
 
 ## Type Mapping
 Status: Met (basic, explicit).
-- Explicit mappings include booleans, serial/bigserial, temporal normalization, JSON/JSONB, and enum fallback.
+- Explicit mappings include booleans, unsigned integer variants, serial/bigserial, temporal normalization, JSON/JSONB, and enum fallback.
 - Unknown/unhandled types fallback to TEXT with lossy warnings.
 
 ## Unsupported Objects Policy
 Status: Met.
-- Views/triggers/procedures/functions are skipped with warnings.
+- Basic `CREATE VIEW` is supported.
+- Triggers/procedures/functions are skipped with warnings.
 
 ## Public API
 Status: Met.

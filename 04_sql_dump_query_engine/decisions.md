@@ -12,11 +12,12 @@
     * Stream large inserts/copy data in batches.
 
 - Type mapping baseline
-    * Explicit mappings for booleans, serial/sequence equivalents, temporal types, enum/json.
+    * Explicit mappings for booleans, unsigned integer variants, serial/sequence equivalents, temporal types, enum/json.
     * Unknown types fall back to TEXT with warnings.
 
 - Unsupported objects policy
-    * Skip views/triggers/procedures/functions with clear warnings.
+    * Support basic CREATE VIEW ingestion.
+    * Skip triggers/procedures/functions with clear warnings.
     * Support core table/schema/data path first.
 
 - API shape
