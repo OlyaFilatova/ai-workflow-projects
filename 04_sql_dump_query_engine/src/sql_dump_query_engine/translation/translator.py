@@ -19,6 +19,8 @@ _SKIP_PREFIXES = (
     "UNLOCK TABLES",
     "DELIMITER",
     "SET ",
+    "SELECT PG_CATALOG.SETVAL",
+    "ALTER TABLE ONLY",
 )
 
 
@@ -55,9 +57,13 @@ def translate_statement(event: ParseEvent) -> TranslationArtifact:
         )
         return TranslationArtifact(original=original, sql="", skipped=True, warnings=warnings)
 
-    translated = _translate_mysql(sql) if original.dialect == "mysql" else sql
-    translated = normalize_type_tokens(translated)
+    translated = sql
+    if original.dialect == "mysql":
+        translated = _translate_mysql(translated)
+    elif original.dialect == "postgres":
+        translated = _translate_postgres(translated)
 
+    translated = normalize_type_tokens(translated)
     return TranslationArtifact(original=original, sql=translated, skipped=False, warnings=warnings)
 
 
@@ -80,4 +86,13 @@ def _translate_mysql(sql: str) -> str:
     translated = re.sub(r"\s+", " ", translated)
     translated = translated.replace(" ,", ",")
 
+    return translated.strip()
+
+
+def _translate_postgres(sql: str) -> str:
+    translated = sql
+    translated = re.sub(r"\bpublic\.", "", translated, flags=re.IGNORECASE)
+    translated = re.sub(r"::\s*\w+", "", translated)
+    translated = re.sub(r"\bWITHOUT\s+OIDS\b", "", translated, flags=re.IGNORECASE)
+    translated = re.sub(r"\s+", " ", translated)
     return translated.strip()

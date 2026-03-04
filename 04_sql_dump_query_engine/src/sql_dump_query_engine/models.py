@@ -25,6 +25,7 @@ class ParseEvent:
 
     statement: Statement
     kind: Literal["sql", "copy", "comment"] = "sql"
+    copy_rows: list[str] | None = None
 
 
 @dataclass(slots=True)

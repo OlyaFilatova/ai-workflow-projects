@@ -6,7 +6,8 @@ import re
 
 from ..diagnostics import WarningCollector
 from ..errors import LoadError
-from ..models import LoadStats
+from ..models import LoadStats, ParseEvent
+from ..parsing.pg_copy import parse_copy_header, parse_copy_row
 from ..parsing.splitter import split_statements
 from ..translation.translator import translate_statement
 
@@ -23,6 +24,12 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
     warnings = WarningCollector()
     for event in split_statements(text):
         stats.parsed_statements += 1
+
+        if event.kind == "copy":
+            _load_copy_event(engine, event)
+            stats.executed_statements += 1
+            continue
+
         artifact = translate_statement(event)
         warnings.events.extend(artifact.warnings)
 
@@ -45,6 +52,29 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
     return stats
 
 
+def _load_copy_event(engine: object, event: ParseEvent) -> None:
+    if event.copy_rows is None:
+        return
+
+    header = parse_copy_header(event.statement.text)
+    if not event.copy_rows:
+        return
+
+    rows = [parse_copy_row(raw) for raw in event.copy_rows]
+    placeholders = ", ".join("?" for _ in header.columns)
+    column_sql = ", ".join(header.columns)
+    insert_sql = f"INSERT INTO {header.table} ({column_sql}) VALUES ({placeholders})"
+
+    try:
+        getattr(engine, "executemany")(insert_sql, rows)
+    except Exception as exc:  # pragma: no cover - backend error surface
+        raise LoadError(
+            f"Failed to load COPY block: {exc}",
+            statement_line=event.statement.line,
+            statement_text=event.statement.text,
+        ) from exc
+
+
 def _batch_insert_statement(sql: str, batch_size: int) -> list[str]:
     match = _INSERT_VALUES_RE.match(sql.strip())
     if not match:
@@ -53,7 +83,8 @@ def _batch_insert_statement(sql: str, batch_size: int) -> list[str]:
     prefix, values_blob, trailing_semicolon = match.groups()
     tuples = _split_tuples(values_blob)
     if len(tuples) <= batch_size:
-        return [f"{prefix}{values_blob}{';' if trailing_semicolon or not sql.rstrip().endswith(';') else ''}"]
+        has_semicolon = bool(trailing_semicolon) or sql.rstrip().endswith(";")
+        return [f"{prefix}{values_blob}{'' if has_semicolon else ';'}"]
 
     batched: list[str] = []
     for idx in range(0, len(tuples), batch_size):

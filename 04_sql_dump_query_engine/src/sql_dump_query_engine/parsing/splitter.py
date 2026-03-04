@@ -2,19 +2,69 @@
 
 from __future__ import annotations
 
+import re
+
 from ..errors import ParseError
 from ..models import ParseEvent, Statement
 
+_COPY_HEADER_LINE_RE = re.compile(r"^COPY\s+.+\s+FROM\s+stdin;\s*$", re.IGNORECASE)
+
 
 def split_statements(text: str) -> list[ParseEvent]:
-    """Split SQL dump text into semicolon-terminated statement events.
+    """Split SQL dump text into parse events.
 
-    Handles quoted strings and comment blocks commonly seen in mysqldump output.
+    Supports semicolon-terminated SQL and PostgreSQL COPY blocks.
     """
 
     if "\x00" in text:
         raise ParseError("NUL byte detected in dump text")
 
+    events: list[ParseEvent] = []
+    lines = text.splitlines(keepends=True)
+    sql_chunk: list[str] = []
+    sql_chunk_start_line = 1
+
+    idx = 0
+    while idx < len(lines):
+        line = lines[idx]
+        if _COPY_HEADER_LINE_RE.match(line.strip()):
+            if sql_chunk:
+                events.extend(_split_sql_chunk("".join(sql_chunk), sql_chunk_start_line))
+                sql_chunk = []
+
+            header_line_number = idx + 1
+            copy_rows: list[str] = []
+            idx += 1
+            while idx < len(lines):
+                row = lines[idx].rstrip("\n")
+                if row == "\\.":
+                    break
+                copy_rows.append(row)
+                idx += 1
+
+            if idx >= len(lines):
+                raise ParseError(f"Unterminated COPY block starting at line {header_line_number}")
+
+            statement = Statement(
+                text=line.strip().rstrip(";"), line=header_line_number, dialect="postgres"
+            )
+            events.append(ParseEvent(statement=statement, kind="copy", copy_rows=copy_rows))
+            idx += 1
+            sql_chunk_start_line = idx + 1
+            continue
+
+        if not sql_chunk:
+            sql_chunk_start_line = idx + 1
+        sql_chunk.append(line)
+        idx += 1
+
+    if sql_chunk:
+        events.extend(_split_sql_chunk("".join(sql_chunk), sql_chunk_start_line))
+
+    return events
+
+
+def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
     events: list[ParseEvent] = []
     buffer: list[str] = []
     in_single = False
@@ -23,8 +73,8 @@ def split_statements(text: str) -> list[ParseEvent]:
     in_line_comment = False
     in_block_comment = False
     escaped = False
-    statement_start_line = 1
-    line = 1
+    statement_start_line = start_line
+    line = start_line
 
     idx = 0
     while idx < len(text):
@@ -123,6 +173,6 @@ def _detect_dialect(statement: str) -> str:
     upper = statement.upper()
     if "`" in statement or "LOCK TABLES" in upper or "ENGINE=" in upper:
         return "mysql"
-    if upper.startswith("COPY "):
+    if "::" in statement or "PG_CATALOG" in upper:
         return "postgres"
     return "generic"

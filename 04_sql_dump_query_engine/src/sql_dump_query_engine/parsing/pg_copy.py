@@ -1,20 +1,58 @@
-"""PostgreSQL COPY parsing placeholders."""
+"""PostgreSQL COPY block parsing helpers."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+
+from ..errors import ParseError
+
+_COPY_HEADER_RE = re.compile(
+    r"^COPY\s+(?P<table>.+?)\s*\((?P<columns>.+)\)\s+FROM\s+stdin$",
+    re.IGNORECASE,
+)
 
 
 @dataclass(slots=True)
-class CopyBlock:
-    header: str
-    rows: list[str]
+class CopyHeader:
+    table: str
+    columns: list[str]
 
 
-def extract_copy_blocks(_: str) -> list[CopyBlock]:
-    """Extract PostgreSQL COPY blocks.
+def parse_copy_header(header_sql: str) -> CopyHeader:
+    """Parse COPY header SQL into relation and columns."""
 
-    Placeholder implementation to be expanded in later prompts.
-    """
+    clean = header_sql.strip().rstrip(";")
+    match = _COPY_HEADER_RE.match(clean)
+    if not match:
+        raise ParseError(f"Unsupported COPY header: {header_sql}")
+    columns = [item.strip() for item in match.group("columns").split(",")]
+    table = match.group("table").strip()
+    if table.lower().startswith("public."):
+        table = table.split(".", maxsplit=1)[1]
+    return CopyHeader(table=table, columns=columns)
 
-    return []
+
+def parse_copy_row(raw_row: str) -> tuple[object, ...]:
+    """Parse a single COPY row (tab-separated, PostgreSQL escape rules)."""
+
+    values: list[object] = []
+    for token in raw_row.split("\t"):
+        if token == r"\N":
+            values.append(None)
+        else:
+            values.append(_decode_pg_token(token))
+    return tuple(values)
+
+
+def _decode_pg_token(token: str) -> str:
+    replacements = {
+        r"\\": "\\",
+        r"\t": "\t",
+        r"\n": "\n",
+        r"\r": "\r",
+    }
+    decoded = token
+    for key, value in replacements.items():
+        decoded = decoded.replace(key, value)
+    return decoded
