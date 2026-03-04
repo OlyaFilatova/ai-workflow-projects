@@ -7,7 +7,6 @@ from pathlib import Path
 
 from auditpy.models import Report, Severity
 
-
 SEVERITY_ORDER = [Severity.LOW, Severity.MEDIUM, Severity.HIGH, Severity.CRITICAL]
 
 

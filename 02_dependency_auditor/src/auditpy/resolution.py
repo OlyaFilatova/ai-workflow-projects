@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import json
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import venv
+from dataclasses import dataclass, field
+from pathlib import Path
 
 try:
     from packaging.requirements import InvalidRequirement, Requirement

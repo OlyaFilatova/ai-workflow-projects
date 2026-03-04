@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 VALID_POLICIES = {"no-gpl"}
 VALID_FAIL_THRESHOLDS = {"high", "critical"}
 
@@ -24,7 +23,7 @@ class ScanConfig:
         fail_on: str = "high",
         cache_ttl_hours: int = 24,
         verbose: bool = False,
-    ) -> "ScanConfig":
+    ) -> ScanConfig:
         if policy not in VALID_POLICIES:
             supported = ", ".join(sorted(VALID_POLICIES))
             raise ValueError(f"Unsupported policy '{policy}'. Supported policies: {supported}")
