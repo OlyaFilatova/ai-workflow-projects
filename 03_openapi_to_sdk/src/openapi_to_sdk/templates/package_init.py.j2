@@ -1,0 +1,3 @@
+from .models import {% for export in exports %}{{ export }}{% if not loop.last %}, {% endif %}{% endfor %}
+
+__all__ = [{% for export in exports %}{{ export | tojson }}{% if not loop.last %}, {% endif %}{% endfor %}]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import keyword
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -381,7 +382,6 @@ def _merge_all_of(schema: dict[str, Any], ctx: _MappingContext) -> dict[str, Any
         if "$ref" in piece:
             ref_type = _ref_to_type(str(piece["$ref"]), ctx)
             if ref_type in ctx.schema_name_map.values():
-                # Keep typed linkage; rendering can map this reference.
                 merged.setdefault("x_ref_parts", []).append(ref_type)
             continue
 
@@ -447,7 +447,9 @@ def _to_snake_case(raw: str) -> str:
     base = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", base)
     snake = base.lower()
     if snake[0].isdigit():
-        return f"n_{snake}"
+        snake = f"n_{snake}"
+    if keyword.iskeyword(snake):
+        snake = f"{snake}_"
     return snake
 
 

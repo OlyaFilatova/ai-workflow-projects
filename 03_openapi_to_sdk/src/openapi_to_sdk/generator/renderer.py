@@ -1,17 +1,112 @@
 """Template rendering orchestration."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
 from pathlib import Path
 
-from openapi_to_sdk.ir.models import ApiIR
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+from openapi_to_sdk.ir.models import ApiIR, FieldIR, SchemaIR
+
+
+@dataclass(slots=True)
+class _TemplateField:
+    name: str
+    type_hint: str
+    required: bool
+    alias: str | None
+
+
+@dataclass(slots=True)
+class _TemplateSchema:
+    name: str
+    kind: str
+    type_hint: str
+    fields: list[_TemplateField]
 
 
 def render_sdk(ir: ApiIR, output_dir: Path) -> None:
-    """Render a generated SDK package from IR.
-
-    This scaffold creates target directories. Later prompts expand full rendering.
-    """
+    """Render SDK package files from IR using Jinja2 templates."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    package_dir = output_dir / ir.title.lower().replace(" ", "_")
+    package_name = _package_name(ir.title)
+    package_dir = output_dir / package_name
     package_dir.mkdir(parents=True, exist_ok=True)
-    init_file = package_dir / "__init__.py"
-    init_file.write_text(f"\"\"\"Generated SDK for {ir.title}.\"\"\"\n", encoding="utf-8")
+
+    env = _build_environment()
+
+    template_schemas = [_schema_to_template(schema) for schema in sorted(ir.schemas, key=lambda item: item.name)]
+    exports = [schema.name for schema in template_schemas]
+    typing_imports, stdlib_imports = _collect_type_imports(template_schemas)
+
+    models_source = env.get_template("models.py.j2").render(
+        schemas=template_schemas,
+        typing_imports=typing_imports,
+        stdlib_imports=stdlib_imports,
+    )
+    init_source = env.get_template("package_init.py.j2").render(exports=exports)
+
+    (package_dir / "models.py").write_text(models_source, encoding="utf-8")
+    (package_dir / "__init__.py").write_text(init_source, encoding="utf-8")
+    (package_dir / "py.typed").write_text("", encoding="utf-8")
+
+
+def _build_environment() -> Environment:
+    template_dir = Path(__file__).resolve().parents[1] / "templates"
+    env = Environment(
+        loader=FileSystemLoader(template_dir),
+        autoescape=False,
+        trim_blocks=True,
+        lstrip_blocks=True,
+        undefined=StrictUndefined,
+    )
+    return env
+
+
+def _schema_to_template(schema: SchemaIR) -> _TemplateSchema:
+    fields = [_field_to_template(field) for field in schema.fields]
+    return _TemplateSchema(
+        name=schema.name,
+        kind=schema.kind,
+        type_hint=schema.type_hint,
+        fields=fields,
+    )
+
+
+def _field_to_template(field: FieldIR) -> _TemplateField:
+    alias = field.name if field.python_name != field.name else None
+    return _TemplateField(
+        name=field.python_name,
+        type_hint=field.type_hint,
+        required=field.required,
+        alias=alias,
+    )
+
+
+def _collect_type_imports(schemas: list[_TemplateSchema]) -> tuple[list[str], list[str]]:
+    hints: list[str] = []
+    for schema in schemas:
+        hints.append(schema.type_hint)
+        hints.extend(field.type_hint for field in schema.fields)
+
+    typing_imports: list[str] = []
+    stdlib_imports: list[str] = []
+
+    if any("Any" in hint for hint in hints):
+        typing_imports.append("Any")
+    if any("Literal[" in hint for hint in hints):
+        typing_imports.append("Literal")
+    if any("datetime" in hint for hint in hints):
+        stdlib_imports.append("datetime")
+    if any("date" in hint for hint in hints):
+        stdlib_imports.append("date")
+    if any("UUID" in hint for hint in hints):
+        stdlib_imports.append("UUID")
+
+    return sorted(set(typing_imports)), sorted(set(stdlib_imports))
+
+
+def _package_name(title: str) -> str:
+    cleaned = "".join(ch if ch.isalnum() else "_" for ch in title.lower()).strip("_")
+    collapsed = "_".join(segment for segment in cleaned.split("_") if segment)
+    return collapsed or "generated_sdk"
