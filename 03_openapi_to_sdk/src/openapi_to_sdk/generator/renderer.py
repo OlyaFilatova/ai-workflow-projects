@@ -7,7 +7,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from openapi_to_sdk.ir.models import ApiIR, FieldIR, SchemaIR
+from openapi_to_sdk.ir.models import ApiIR, FieldIR, OperationIR, SchemaIR
 
 
 @dataclass(slots=True)
@@ -26,6 +26,16 @@ class _TemplateSchema:
     fields: list[_TemplateField]
 
 
+@dataclass(slots=True)
+class _TemplateOperation:
+    method_name: str
+    http_method: str
+    path: str
+    return_type: str
+    response_model: str | None
+    error_model: str | None
+
+
 def render_sdk(ir: ApiIR, output_dir: Path) -> None:
     """Render SDK package files from IR using Jinja2 templates."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -38,15 +48,19 @@ def render_sdk(ir: ApiIR, output_dir: Path) -> None:
     template_schemas = [_schema_to_template(schema) for schema in sorted(ir.schemas, key=lambda item: item.name)]
     exports = [schema.name for schema in template_schemas]
     typing_imports, stdlib_imports = _collect_type_imports(template_schemas)
+    schema_names = {schema.name for schema in template_schemas}
+    operations = [_operation_to_template(item, schema_names) for item in ir.operations]
 
     models_source = env.get_template("models.py.j2").render(
         schemas=template_schemas,
         typing_imports=typing_imports,
         stdlib_imports=stdlib_imports,
     )
+    client_source = env.get_template("client.py.j2").render(operations=operations)
     init_source = env.get_template("package_init.py.j2").render(exports=exports)
 
     (package_dir / "models.py").write_text(models_source, encoding="utf-8")
+    (package_dir / "client.py").write_text(client_source, encoding="utf-8")
     (package_dir / "__init__.py").write_text(init_source, encoding="utf-8")
     (package_dir / "py.typed").write_text("", encoding="utf-8")
 
@@ -80,6 +94,40 @@ def _field_to_template(field: FieldIR) -> _TemplateField:
         type_hint=field.type_hint,
         required=field.required,
         alias=alias,
+    )
+
+
+def _operation_to_template(operation: OperationIR, schema_names: set[str]) -> _TemplateOperation:
+    success_response = next(
+        (
+            response
+            for response in operation.responses
+            if response.status_code.startswith("2") and response.type_hint is not None
+        ),
+        None,
+    )
+    error_response = next(
+        (
+            response
+            for response in operation.responses
+            if response.status_code.startswith(("4", "5")) and response.type_hint is not None
+        ),
+        None,
+    )
+
+    return_type = success_response.type_hint if success_response is not None else "None"
+    response_model = return_type if return_type in schema_names else None
+
+    error_type = error_response.type_hint if error_response is not None else None
+    error_model = error_type if error_type in schema_names else None
+
+    return _TemplateOperation(
+        method_name=operation.python_name,
+        http_method=operation.method,
+        path=operation.path,
+        return_type=return_type,
+        response_model=response_model,
+        error_model=error_model,
     )
 
 
