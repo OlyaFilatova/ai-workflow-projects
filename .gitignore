@@ -1,0 +1,6 @@
+__pycache__
+build
+*.egg-info
+prompts
+prompt_outputs
+.DS_Store
