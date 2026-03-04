@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 
 from openapi_to_sdk.generator.renderer import render_sdk
-from openapi_to_sdk.ir.models import ApiIR
+from openapi_to_sdk.ir import build_api_ir
 from openapi_to_sdk.parser.loader import load_openapi_document
 
 
@@ -26,11 +26,7 @@ def main() -> int:
 
     if args.command == "generate":
         spec = load_openapi_document(args.spec)
-        ir = ApiIR(
-            title=spec["info"]["title"],
-            version=spec["info"]["version"],
-            operations=[],
-        )
+        ir = build_api_ir(spec)
         render_sdk(ir=ir, output_dir=args.output)
         return 0
 
