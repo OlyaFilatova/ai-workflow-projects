@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from ..models import Statement
+from ..models import ParseEvent, TranslationArtifact
 
 
-def translate_statement(statement: Statement) -> str:
+def translate_statement(event: ParseEvent) -> TranslationArtifact:
     """Translate source SQL into DuckDB-compatible SQL.
 
-    Scaffold: currently pass-through.
+    Current implementation is pass-through with minimal skip behavior.
     """
 
-    return statement.text
+    sql = event.statement.text.strip()
+    skipped = not sql
+    return TranslationArtifact(original=event.statement, sql=sql, skipped=skipped)

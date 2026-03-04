@@ -1,28 +1,36 @@
-"""Statement splitting stubs."""
+"""Statement splitting utilities."""
 
 from __future__ import annotations
 
-from ..models import Statement
+from ..errors import ParseError
+from ..models import ParseEvent, Statement
 
 
-def split_statements(text: str) -> list[Statement]:
-    """Split SQL dump text into statements.
+def split_statements(text: str) -> list[ParseEvent]:
+    """Split SQL dump text into semicolon-terminated statement events.
 
-    Current scaffold implementation returns semicolon-terminated blocks.
+    This splitter intentionally supports a minimal baseline and is expanded in later steps.
     """
 
-    statements: list[Statement] = []
+    if "\x00" in text:
+        raise ParseError("NUL byte detected in dump text")
+
+    events: list[ParseEvent] = []
     buffer: list[str] = []
-    line = 1
     start_line = 1
-    for raw_line in text.splitlines():
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        stripped = raw_line.strip()
+        if not buffer and not stripped:
+            continue
         if not buffer:
-            start_line = line
+            start_line = line_number
         buffer.append(raw_line)
-        if raw_line.rstrip().endswith(";"):
-            statements.append(Statement(text="\n".join(buffer), line=start_line))
+        if stripped.endswith(";"):
+            statement = Statement(text="\n".join(buffer), line=start_line)
+            events.append(ParseEvent(statement=statement))
             buffer.clear()
-        line += 1
+
     if buffer:
-        statements.append(Statement(text="\n".join(buffer), line=start_line))
-    return statements
+        statement = Statement(text="\n".join(buffer), line=start_line)
+        events.append(ParseEvent(statement=statement))
+    return events
