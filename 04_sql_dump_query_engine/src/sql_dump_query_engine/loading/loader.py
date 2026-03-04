@@ -43,7 +43,7 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
                 stats.executed_statements += 1
         except Exception as exc:  # pragma: no cover - backend error surface
             raise LoadError(
-                f"Failed to execute statement: {exc}",
+                "Failed to execute translated SQL during dump load. Check unsupported dialect syntax.",
                 statement_line=event.statement.line,
                 statement_text=event.statement.text,
             ) from exc
@@ -69,7 +69,7 @@ def _load_copy_event(engine: object, event: ParseEvent) -> None:
         getattr(engine, "executemany")(insert_sql, rows)
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
-            f"Failed to load COPY block: {exc}",
+            "Failed to load PostgreSQL COPY block. Check COPY column order and value types.",
             statement_line=event.statement.line,
             statement_text=event.statement.text,
         ) from exc

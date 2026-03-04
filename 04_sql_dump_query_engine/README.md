@@ -4,24 +4,41 @@ Pure Python library for executing SQL queries directly against SQL dump files us
 
 ## Status
 
-Project scaffolding phase. Current implementation is intentionally minimal and will expand in subsequent steps.
-
-## Planned Scope
-
-- Full support target: mysqldump
-- Basic support target: PostgreSQL dump (including minimal COPY handling)
+Working baseline implementation with:
+- Primary support: mysqldump (table/data path)
+- Basic support: PostgreSQL dumps including minimal `COPY ... FROM stdin` ingestion
 - Explicitly out of scope: SQLite dumps
 
-## API (planned)
+## Library API
 
 - `load_dump(path_or_text)`
 - `query(sql) -> rows/columns`
 
-## CLI (planned)
+## CLI
 
-- `sqldump-query` command for loading a dump and executing SQL.
+Command:
+- `sqldump-query <dump-path> --query "<sql>" [--format table|json|csv]`
 
-## Limitations
+Examples:
+- `sqldump-query dump.sql --query "SELECT COUNT(*) FROM users"`
+- `sqldump-query dump.sql --query "SELECT id,name FROM users" --format json`
 
-- Parser/translator/loader functionality is currently skeleton-only.
-- Unsupported objects policy and type mapping behavior will be implemented incrementally.
+CLI behavior:
+- Non-zero exit code on load/query failures.
+- Error output includes contextual statement details when available.
+
+## Supported Features
+
+- mysqldump:
+  - `CREATE TABLE`
+  - `INSERT INTO ... VALUES ...` (including multi-row batching)
+  - handling of common dump directives/comments
+- PostgreSQL:
+  - basic table/data ingestion
+  - dedicated parsing for `COPY ... FROM stdin` blocks
+
+## Unsupported / Limited
+
+- Views, triggers, procedures, functions are skipped with warnings.
+- PostgreSQL support is intentionally basic and not full dialect coverage.
+- Advanced dump constructs may fail with contextual errors.

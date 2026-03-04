@@ -27,7 +27,10 @@ class SQLDumpQueryEngine:
         try:
             columns, rows = self._engine.query(sql)
         except Exception as exc:  # pragma: no cover - backend error surface
-            raise QueryError(f"Query failed: {exc}", statement_text=sql) from exc
+            raise QueryError(
+                "Query failed. Verify table/column names and SQL syntax.",
+                statement_text=sql,
+            ) from exc
         return QueryResult(columns=columns, rows=rows)
 
 
