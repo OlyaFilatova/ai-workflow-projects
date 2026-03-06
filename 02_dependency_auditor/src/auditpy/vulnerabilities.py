@@ -40,15 +40,15 @@ def scan_vulnerabilities(
     now = datetime.now(UTC)
     ttl = timedelta(hours=cache_ttl_hours)
 
-    cached_results: dict[str, list[dict[str, Any]]] = {}
+    vulnerability_results_by_key: dict[str, list[dict[str, Any]]] = {}
     queries: list[dict[str, Any]] = []
     query_keys: list[str] = []
 
     for node in sorted(nodes, key=lambda item: (item.name.lower(), item.version)):
         key = _cache_key(node.name, node.version)
-        cached = cache_data.get(key)
-        if cached and _is_cache_fresh(cached.get("fetched_at"), now, ttl):
-            cached_results[key] = cached.get("vulns", [])
+        cached_entry = cache_data.get(key)
+        if cached_entry and _is_cache_fresh(cached_entry.get("fetched_at"), now, ttl):
+            vulnerability_results_by_key[key] = cached_entry.get("vulns", [])
             continue
 
         queries.append(
@@ -64,19 +64,19 @@ def scan_vulnerabilities(
         try:
             fetched = _query_osv_batch(queries, timeout_seconds=timeout_seconds)
             for index, key in enumerate(query_keys):
-                vulns = fetched[index].get("vulns", [])
-                cached_results[key] = vulns
+                vulnerabilities = fetched[index].get("vulns", [])
+                vulnerability_results_by_key[key] = vulnerabilities
                 cache_data[key] = {
                     "fetched_at": now.isoformat(),
-                    "vulns": vulns,
+                    "vulns": vulnerabilities,
                 }
             _save_cache(cache_path, cache_data)
         except (TimeoutError, URLError, HTTPError, OSError, json.JSONDecodeError) as exc:
             warnings.append(f"OSV query failed; using cached data where available: {exc}")
             for key in query_keys:
-                cached_results[key] = cache_data.get(key, {}).get("vulns", [])
+                vulnerability_results_by_key[key] = cache_data.get(key, {}).get("vulns", [])
 
-    findings = _build_findings(nodes, dependency_paths, cached_results)
+    findings = _build_findings(nodes, dependency_paths, vulnerability_results_by_key)
     findings.sort(key=lambda item: (item.severity.value, item.package.lower(), item.vuln_id))
 
     return VulnerabilityScanResult(findings=findings, warnings=warnings)

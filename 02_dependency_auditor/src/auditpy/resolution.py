@@ -54,7 +54,7 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
         )
 
     try:
-        parsed = parse_requirements(str(req_path))
+        parsed_requirements = parse_requirements(str(req_path))
     except Exception as exc:
         return ResolutionOutcome(
             error=ResolutionFailure(
@@ -63,7 +63,7 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
             )
         )
 
-    root_names = [req.normalized_name for req in parsed.requirements]
+    root_package_names = [requirement.normalized_name for requirement in parsed_requirements.requirements]
 
     try:
         with tempfile.TemporaryDirectory(prefix="auditpy-resolve-") as tmp_dir:
@@ -72,26 +72,29 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
             python_bin = _venv_python(venv_dir)
 
             _pip_install_requirements(python_bin, req_path)
-            installed = _collect_installed_distributions(python_bin)
+            installed_distributions = _collect_installed_distributions(python_bin)
     except Exception as exc:
         return ResolutionOutcome(
-            warnings=parsed.warnings,
+            warnings=parsed_requirements.warnings,
             error=ResolutionFailure(category="runtime", message=str(exc)),
         )
 
-    edges, adjacency = _build_edges(installed)
+    edges, adjacency = _build_edges(installed_distributions)
     nodes = sorted(
-        (PackageNode(name=str(item["name"]), version=str(item["version"])) for item in installed),
+        (
+            PackageNode(name=str(distribution["name"]), version=str(distribution["version"]))
+            for distribution in installed_distributions
+        ),
         key=lambda node: (node.name.lower(), node.version),
     )
-    dependency_paths = _build_paths(root_names, adjacency)
+    dependency_paths = _build_paths(root_package_names, adjacency)
 
     return ResolutionOutcome(
         nodes=nodes,
         edges=edges,
         dependency_paths=dependency_paths,
-        distributions=installed,
-        warnings=parsed.warnings,
+        distributions=installed_distributions,
+        warnings=parsed_requirements.warnings,
     )
 
 
@@ -145,22 +148,27 @@ def _collect_installed_distributions(python_bin: Path) -> list[dict[str, object]
         stderr = result.stderr.strip() or "Unable to inspect installed distributions"
         raise RuntimeError(f"Metadata inspection failed: {stderr}")
 
-    parsed = json.loads(result.stdout)
-    parsed.sort(key=lambda item: (str(item["name"]).lower(), str(item["version"])))
-    return parsed
+    distribution_metadata = json.loads(result.stdout)
+    distribution_metadata.sort(
+        key=lambda distribution: (str(distribution["name"]).lower(), str(distribution["version"]))
+    )
+    return distribution_metadata
 
 
 def _build_edges(
     installed: list[dict[str, object]],
 ) -> tuple[list[DependencyEdge], dict[str, set[str]]]:
-    known = {canonicalize_name(str(item["name"])): str(item["name"]) for item in installed}
-    adjacency: dict[str, set[str]] = {name: set() for name in known.keys()}
+    package_names_by_normalized = {
+        canonicalize_name(str(distribution["name"])): str(distribution["name"])
+        for distribution in installed
+    }
+    adjacency: dict[str, set[str]] = {name: set() for name in package_names_by_normalized.keys()}
     edges: list[DependencyEdge] = []
 
-    for item in installed:
-        source_name = str(item["name"])
+    for distribution in installed:
+        source_name = str(distribution["name"])
         source_norm = canonicalize_name(source_name)
-        requirements = item.get("requires") or []
+        requirements = distribution.get("requires") or []
 
         for raw_req in requirements:
             raw_req_str = str(raw_req)
@@ -170,7 +178,7 @@ def _build_edges(
                 continue
 
             target_norm = canonicalize_name(req.name)
-            target_name = known.get(target_norm)
+            target_name = package_names_by_normalized.get(target_norm)
             if not target_name:
                 continue
 
