@@ -130,41 +130,41 @@ def parse_markdown(text: str) -> Document:
     )
     blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock] = []
     paragraph_buffer: list[str] = []
-    i = 0
+    line_index = 0
 
-    while i < len(lines):
-        raw = lines[i]
-        line = raw.strip()
+    while line_index < len(lines):
+        raw_line = lines[line_index]
+        stripped_line = raw_line.strip()
 
-        if not line:
+        if not stripped_line:
             paragraph_buffer = _flush_paragraph_block(paragraph_buffer, blocks)
-            i += 1
+            line_index += 1
             continue
 
-        heading_match = _HEADING_RE.match(line)
+        heading_match = _HEADING_RE.match(stripped_line)
         if heading_match:
             paragraph_buffer = _flush_paragraph_block(paragraph_buffer, blocks)
             level = len(heading_match.group(1))
             text_value = normalize_text(heading_match.group(2))
             _append_heading_block(blocks, level, text_value)
-            i += 1
+            line_index += 1
             continue
 
-        if _is_table_start(lines, i):
+        if _is_table_start(lines, line_index):
             paragraph_buffer = _flush_paragraph_block(paragraph_buffer, blocks)
-            i = _consume_table_block(lines, i, blocks)
+            line_index = _consume_table_block(lines, line_index, blocks)
             continue
 
-        unordered_match = _UNORDERED_ITEM_RE.match(raw)
-        ordered_match = _ORDERED_ITEM_RE.match(raw)
+        unordered_match = _UNORDERED_ITEM_RE.match(raw_line)
+        ordered_match = _ORDERED_ITEM_RE.match(raw_line)
         if unordered_match or ordered_match:
             paragraph_buffer = _flush_paragraph_block(paragraph_buffer, blocks)
             ordered = bool(ordered_match)
-            i = _consume_list_block(lines, i, ordered, blocks)
+            line_index = _consume_list_block(lines, line_index, ordered, blocks)
             continue
 
-        paragraph_buffer.append(line)
-        i += 1
+        paragraph_buffer.append(stripped_line)
+        line_index += 1
 
     _flush_paragraph_block(paragraph_buffer, blocks)
     return Document(blocks=blocks, source_format="md")

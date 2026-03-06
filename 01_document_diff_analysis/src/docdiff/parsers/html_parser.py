@@ -84,7 +84,7 @@ def _extract_list(tag: Tag, index: int) -> ListBlock | None:
     )
 
 
-def _extract_block(tag: Tag, index: int) -> HeadingBlock | ParagraphBlock | ListBlock | TableBlock | None:
+def _extract_block_from_tag(tag: Tag, index: int) -> HeadingBlock | ParagraphBlock | ListBlock | TableBlock | None:
     if tag.name.startswith("h"):
         return _extract_heading(tag, index)
     if tag.name == "p":
@@ -113,7 +113,7 @@ def parse_html(text: str) -> Document:
             continue
 
         block_index = len(blocks)
-        block = _extract_block(tag, block_index)
+        block = _extract_block_from_tag(tag, block_index)
         if block is not None:
             blocks.append(block)
 
