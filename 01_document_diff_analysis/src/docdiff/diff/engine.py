@@ -19,6 +19,22 @@ from docdiff.model import (
 )
 
 _TEXTUAL_BLOCKS = (HeadingBlock, ParagraphBlock, ListBlock)
+_LIST_ITEM_SEPARATOR = "|"
+_TABLE_HEADER_SEPARATOR = "|"
+_TABLE_ROW_SEPARATOR = "||"
+_TABLE_SECTION_SEPARATOR = "::"
+_TEXT_PART_SEPARATOR = " "
+_WORD_DIFF_EQUAL = "equal"
+_WORD_DIFF_ADDED = "added"
+_WORD_DIFF_REMOVED = "removed"
+_CHANGE_EQUAL = "equal"
+_CHANGE_ADDED = "added"
+_CHANGE_REMOVED = "removed"
+_CHANGE_MODIFIED = "modified"
+_OPCODE_EQUAL = "equal"
+_OPCODE_DELETE = "delete"
+_OPCODE_INSERT = "insert"
+_OPCODE_REPLACE = "replace"
 
 
 def _block_signature(block: Block) -> tuple[str, str]:
@@ -27,11 +43,11 @@ def _block_signature(block: Block) -> tuple[str, str]:
     if isinstance(block, ParagraphBlock):
         return (block.block_type, block.text)
     if isinstance(block, ListBlock):
-        return (block.block_type, "|".join(block.items))
+        return (block.block_type, _LIST_ITEM_SEPARATOR.join(block.items))
     if isinstance(block, TableBlock):
-        header = "|".join(block.header or [])
-        rows = "||".join("|".join(row) for row in block.rows)
-        return (block.block_type, f"{header}::{rows}")
+        header = _TABLE_HEADER_SEPARATOR.join(block.header or [])
+        rows = _TABLE_ROW_SEPARATOR.join(_TABLE_HEADER_SEPARATOR.join(row) for row in block.rows)
+        return (block.block_type, f"{header}{_TABLE_SECTION_SEPARATOR}{rows}")
     return (block.block_type, f"{block.source or ''}:{block.alt_text or ''}:{block.caption or ''}")
 
 
@@ -41,12 +57,12 @@ def _block_text(block: Block) -> str:
     if isinstance(block, ParagraphBlock):
         return block.text
     if isinstance(block, ListBlock):
-        return " ".join(block.items)
+        return _TEXT_PART_SEPARATOR.join(block.items)
     if isinstance(block, TableBlock):
-        header = " ".join(block.header or [])
-        body = " ".join(" ".join(row) for row in block.rows)
+        header = _TEXT_PART_SEPARATOR.join(block.header or [])
+        body = _TEXT_PART_SEPARATOR.join(_TEXT_PART_SEPARATOR.join(row) for row in block.rows)
         return f"{header} {body}".strip()
-    return " ".join(filter(None, [block.alt_text, block.caption, block.source]))
+    return _TEXT_PART_SEPARATOR.join(filter(None, [block.alt_text, block.caption, block.source]))
 
 
 def _word_diff(before_text: str, after_text: str) -> list[WordDiff]:
@@ -56,15 +72,15 @@ def _word_diff(before_text: str, after_text: str) -> list[WordDiff]:
     output: list[WordDiff] = []
 
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == "equal":
-            output.extend(WordDiff(token=token, change_type="equal") for token in before_words[i1:i2])
-        elif tag == "delete":
-            output.extend(WordDiff(token=token, change_type="removed") for token in before_words[i1:i2])
-        elif tag == "insert":
-            output.extend(WordDiff(token=token, change_type="added") for token in after_words[j1:j2])
-        elif tag == "replace":
-            output.extend(WordDiff(token=token, change_type="removed") for token in before_words[i1:i2])
-            output.extend(WordDiff(token=token, change_type="added") for token in after_words[j1:j2])
+        if tag == _OPCODE_EQUAL:
+            output.extend(WordDiff(token=token, change_type=_WORD_DIFF_EQUAL) for token in before_words[i1:i2])
+        elif tag == _OPCODE_DELETE:
+            output.extend(WordDiff(token=token, change_type=_WORD_DIFF_REMOVED) for token in before_words[i1:i2])
+        elif tag == _OPCODE_INSERT:
+            output.extend(WordDiff(token=token, change_type=_WORD_DIFF_ADDED) for token in after_words[j1:j2])
+        elif tag == _OPCODE_REPLACE:
+            output.extend(WordDiff(token=token, change_type=_WORD_DIFF_REMOVED) for token in before_words[i1:i2])
+            output.extend(WordDiff(token=token, change_type=_WORD_DIFF_ADDED) for token in after_words[j1:j2])
 
     return output
 
@@ -73,7 +89,7 @@ def _build_modified_item(before: Block, after: Block, granularity: Granularity) 
     include_word_diff = granularity in {"block+word", "word"}
     if include_word_diff and (isinstance(before, _TEXTUAL_BLOCKS) or isinstance(after, _TEXTUAL_BLOCKS)):
         return DiffItem(
-            change_type="modified",
+            change_type=_CHANGE_MODIFIED,
             before=before,
             after=after,
             word_diffs=_word_diff(_block_text(before), _block_text(after)),
@@ -81,13 +97,13 @@ def _build_modified_item(before: Block, after: Block, granularity: Granularity) 
 
     if include_word_diff and (isinstance(before, TableBlock) or isinstance(after, TableBlock)):
         return DiffItem(
-            change_type="modified",
+            change_type=_CHANGE_MODIFIED,
             before=before,
             after=after,
             word_diffs=_word_diff(_block_text(before), _block_text(after)),
         )
 
-    return DiffItem(change_type="modified", before=before, after=after)
+    return DiffItem(change_type=_CHANGE_MODIFIED, before=before, after=after)
 
 
 def diff_documents(
@@ -103,30 +119,30 @@ def diff_documents(
     items: list[DiffItem] = []
 
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == "equal":
+        if tag == _OPCODE_EQUAL:
             for before_block, after_block in zip(before.blocks[i1:i2], after.blocks[j1:j2], strict=True):
-                items.append(DiffItem(change_type="equal", before=before_block, after=after_block))
+                items.append(DiffItem(change_type=_CHANGE_EQUAL, before=before_block, after=after_block))
             continue
 
-        if tag == "delete":
+        if tag == _OPCODE_DELETE:
             for block in before.blocks[i1:i2]:
-                items.append(DiffItem(change_type="removed", before=block, after=None))
+                items.append(DiffItem(change_type=_CHANGE_REMOVED, before=block, after=None))
             continue
 
-        if tag == "insert":
+        if tag == _OPCODE_INSERT:
             for block in after.blocks[j1:j2]:
-                items.append(DiffItem(change_type="added", before=None, after=block))
+                items.append(DiffItem(change_type=_CHANGE_ADDED, before=None, after=block))
             continue
 
-        if tag == "replace":
+        if tag == _OPCODE_REPLACE:
             before_slice = before.blocks[i1:i2]
             after_slice = after.blocks[j1:j2]
             for before_block, after_block in zip_longest(before_slice, after_slice):
                 if before_block is not None and after_block is not None:
                     items.append(_build_modified_item(before_block, after_block, granularity))
                 elif before_block is not None:
-                    items.append(DiffItem(change_type="removed", before=before_block, after=None))
+                    items.append(DiffItem(change_type=_CHANGE_REMOVED, before=before_block, after=None))
                 elif after_block is not None:
-                    items.append(DiffItem(change_type="added", before=None, after=after_block))
+                    items.append(DiffItem(change_type=_CHANGE_ADDED, before=None, after=after_block))
 
     return DiffResult(granularity=granularity, items=items)

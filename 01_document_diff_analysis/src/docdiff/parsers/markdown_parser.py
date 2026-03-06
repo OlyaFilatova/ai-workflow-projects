@@ -13,6 +13,9 @@ _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
 _UNORDERED_ITEM_RE = re.compile(r"^\s*[-*+]\s+(.+)$")
 _ORDERED_ITEM_RE = re.compile(r"^\s*\d+[.)]\s+(.+)$")
 _TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$")
+_WINDOWS_NEWLINE = "\r\n"
+_LEGACY_MAC_NEWLINE = "\r"
+_UNIX_NEWLINE = "\n"
 
 
 def _is_table_start(lines: list[str], index: int) -> bool:
@@ -122,7 +125,9 @@ def _consume_list_block(
 
 def parse_markdown(text: str) -> Document:
     """Parse Markdown text into a normalized document."""
-    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    lines = text.replace(_WINDOWS_NEWLINE, _UNIX_NEWLINE).replace(_LEGACY_MAC_NEWLINE, _UNIX_NEWLINE).split(
+        _UNIX_NEWLINE
+    )
     blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock] = []
     paragraph_buffer: list[str] = []
     i = 0
