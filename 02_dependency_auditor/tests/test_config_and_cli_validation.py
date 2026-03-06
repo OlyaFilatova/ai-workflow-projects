@@ -1,43 +1,41 @@
 from __future__ import annotations
 
 import io
-import unittest
 from contextlib import redirect_stderr
+
+import pytest
 
 from auditpy.cli import build_parser
 from auditpy.config import ScanConfig
 
 
-class ConfigValidationTest(unittest.TestCase):
-    def test_default_config(self) -> None:
-        cfg = ScanConfig.create()
-        self.assertEqual(cfg.policy, "no-gpl")
-        self.assertEqual(cfg.fail_on, "high")
-        self.assertEqual(cfg.cache_ttl_hours, 24)
-        self.assertFalse(cfg.verbose)
-
-    def test_invalid_policy(self) -> None:
-        with self.assertRaisesRegex(ValueError, "Unsupported policy"):
-            ScanConfig.create(policy="allow-all")
-
-    def test_invalid_fail_threshold(self) -> None:
-        with self.assertRaisesRegex(ValueError, "Unsupported fail threshold"):
-            ScanConfig.create(fail_on="medium")
-
-    def test_invalid_ttl(self) -> None:
-        with self.assertRaisesRegex(ValueError, "Cache TTL must be"):
-            ScanConfig.create(cache_ttl_hours=0)
+def test_default_config() -> None:
+    cfg = ScanConfig.create()
+    assert cfg.policy == "no-gpl"
+    assert cfg.fail_on == "high"
+    assert cfg.cache_ttl_hours == 24
+    assert cfg.verbose is False
 
 
-class CliValidationTest(unittest.TestCase):
-    def test_cli_rejects_unknown_policy(self) -> None:
-        parser = build_parser()
-        err = io.StringIO()
-        with redirect_stderr(err), self.assertRaises(SystemExit) as ctx:
-            parser.parse_args(["scan", "-r", "requirements.txt", "--policy", "invalid"])
-        self.assertEqual(ctx.exception.code, 2)
-        self.assertIn("Only 'no-gpl' is currently supported", err.getvalue())
+def test_invalid_policy() -> None:
+    with pytest.raises(ValueError, match="Unsupported policy"):
+        ScanConfig.create(policy="allow-all")
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_invalid_fail_threshold() -> None:
+    with pytest.raises(ValueError, match="Unsupported fail threshold"):
+        ScanConfig.create(fail_on="medium")
+
+
+def test_invalid_ttl() -> None:
+    with pytest.raises(ValueError, match="Cache TTL must be"):
+        ScanConfig.create(cache_ttl_hours=0)
+
+
+def test_cli_rejects_unknown_policy() -> None:
+    parser = build_parser()
+    err = io.StringIO()
+    with redirect_stderr(err), pytest.raises(SystemExit) as exc_info:
+        parser.parse_args(["scan", "-r", "requirements.txt", "--policy", "invalid"])
+    assert exc_info.value.code == 2
+    assert "Only 'no-gpl' is currently supported" in err.getvalue()
