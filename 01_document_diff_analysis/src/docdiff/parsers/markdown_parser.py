@@ -7,7 +7,7 @@ from pathlib import Path
 
 from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
-from .common import make_block_id, normalize_text
+from .common import make_block_id, normalize_text, read_utf8_file
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
 _UNORDERED_ITEM_RE = re.compile(r"^\s*[-*+]\s+(.+)$")
@@ -172,4 +172,4 @@ def parse_markdown(text: str) -> Document:
 
 def parse_markdown_file(path: Path) -> Document:
     """Parse a Markdown file from disk into a normalized document."""
-    return parse_markdown(path.read_text(encoding="utf-8"))
+    return parse_markdown(read_utf8_file(path, "Markdown"))

@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 
 from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
-from .common import make_block_id, normalize_text
+from .common import make_block_id, normalize_text, read_utf8_file
 
 _BLOCK_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "table"}
 _SKIP_ANCESTOR_TAGS = {"table", "ul", "ol"}
@@ -122,4 +122,4 @@ def parse_html(text: str) -> Document:
 
 def parse_html_file(path: Path) -> Document:
     """Parse an HTML file from disk into a normalized document."""
-    return parse_html(path.read_text(encoding="utf-8"))
+    return parse_html(read_utf8_file(path, "HTML"))

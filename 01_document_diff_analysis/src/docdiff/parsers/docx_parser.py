@@ -137,7 +137,12 @@ def _handle_paragraph(
 
 def parse_docx_file(path: Path) -> Document:
     """Parse a DOCX file from disk into a normalized document."""
-    docx_doc = DocxDocumentFactory(path)
+    try:
+        docx_doc = DocxDocumentFactory(path)
+    except OSError as exc:
+        raise OSError(f"Unable to read DOCX file '{path}': {exc}") from exc
+    except Exception as exc:
+        raise ValueError(f"Unable to parse DOCX file '{path}': {exc}") from exc
     return _parse_docx_document(docx_doc)
 
 
