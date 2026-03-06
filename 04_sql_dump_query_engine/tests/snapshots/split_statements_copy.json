@@ -1,0 +1,26 @@
+[
+  {
+    "kind": "sql",
+    "line": 1,
+    "dialect": "generic",
+    "statement": "CREATE TABLE t (id integer);",
+    "copy_rows": null
+  },
+  {
+    "kind": "copy",
+    "line": 2,
+    "dialect": "postgres",
+    "statement": "COPY public.t (id) FROM stdin",
+    "copy_rows": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "kind": "sql",
+    "line": 6,
+    "dialect": "generic",
+    "statement": "SELECT id FROM public.t;",
+    "copy_rows": null
+  }
+]

@@ -1,0 +1,5 @@
+[
+  "INSERT INTO t VALUES (1, 'a'), (2, 'b');",
+  "INSERT INTO t VALUES (3, 'c'), (4, 'd');",
+  "INSERT INTO t VALUES (5, 'e');"
+]
