@@ -10,12 +10,8 @@ import venv
 from dataclasses import dataclass, field
 from pathlib import Path
 
-try:
-    from packaging.requirements import InvalidRequirement, Requirement
-    from packaging.utils import canonicalize_name
-except ModuleNotFoundError:
-    from pip._vendor.packaging.requirements import InvalidRequirement, Requirement
-    from pip._vendor.packaging.utils import canonicalize_name
+from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import canonicalize_name
 
 from auditpy.models import DependencyEdge, PackageNode
 from auditpy.parsing import parse_requirements

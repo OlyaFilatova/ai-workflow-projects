@@ -5,10 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-try:
-    from packaging.utils import canonicalize_name
-except ModuleNotFoundError:
-    from pip._vendor.packaging.utils import canonicalize_name
+from packaging.utils import canonicalize_name
 
 from auditpy.models import LicenseFinding
 

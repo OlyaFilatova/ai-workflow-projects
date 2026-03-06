@@ -10,10 +10,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-try:
-    from packaging.utils import canonicalize_name
-except ModuleNotFoundError:
-    from pip._vendor.packaging.utils import canonicalize_name
+from packaging.utils import canonicalize_name
 
 from auditpy.models import PackageNode, Severity, VulnerabilityFinding
 
