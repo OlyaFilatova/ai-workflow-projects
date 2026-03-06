@@ -9,7 +9,7 @@ from docx.document import Document as DocxDocumentType
 from docx.table import Table as DocxTable
 from docx.text.paragraph import Paragraph as DocxParagraph
 
-from docdiff.model import Block, Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
+from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
 from .common import make_block_id, normalize_text
 
@@ -71,7 +71,7 @@ def _extract_table(table: DocxTable, index: int) -> TableBlock:
 
 
 def _flush_list_block(
-    blocks: list[Block],
+    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
     list_items: list[str],
     is_ordered: bool | None,
 ) -> tuple[list[str], bool | None]:
@@ -97,7 +97,7 @@ def _flush_list_block(
 
 
 def _append_heading_block(
-    blocks: list[Block],
+    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
     level: int,
     text: str,
 ) -> None:
@@ -120,7 +120,7 @@ def _append_heading_block(
 
 
 def _append_paragraph_block(
-    blocks: list[Block],
+    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
     text: str,
 ) -> None:
     """Append a paragraph block to the output sequence.
@@ -141,7 +141,7 @@ def _append_paragraph_block(
 
 def _handle_paragraph(
     paragraph: DocxParagraph,
-    blocks: list[Block],
+    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
     list_buffer: list[str],
     list_ordered: bool | None,
 ) -> tuple[list[str], bool | None]:
@@ -186,7 +186,7 @@ def parse_docx_file(path: Path) -> Document:
         path: Path to a DOCX file.
     """
     try:
-        docx_doc = DocxDocumentFactory(str(path))
+        docx_doc = DocxDocumentFactory(path)
     except OSError as exc:
         raise OSError(f"Unable to read DOCX file '{path}': {exc}") from exc
     except Exception as exc:
@@ -200,7 +200,7 @@ def _parse_docx_document(docx_doc: DocxDocumentType) -> Document:
     Args:
         docx_doc: Loaded python-docx document instance.
     """
-    blocks: list[Block] = []
+    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock] = []
     body = docx_doc.element.body
     list_buffer: list[str] = []
     list_ordered: bool | None = None

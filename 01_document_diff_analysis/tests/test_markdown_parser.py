@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from docdiff.model import ListBlock, TableBlock
 from docdiff.parsers import parse_markdown
 
 
@@ -34,12 +33,8 @@ Final notes paragraph with extra detail.
         "paragraph",
     ]
     assert doc.blocks[0].block_id == "heading-0000"
-    list_block = doc.blocks[2]
-    assert isinstance(list_block, ListBlock)
-    assert list_block.items == ["Normalize whitespace", "Keep predictable block IDs"]
-    table_block = doc.blocks[3]
-    assert isinstance(table_block, TableBlock)
-    assert table_block.header == ["Module", "Status"]
+    assert doc.blocks[2].items == ["Normalize whitespace", "Keep predictable block IDs"]
+    assert doc.blocks[3].header == ["Module", "Status"]
 
 
 def test_markdown_parser_supports_ordered_lists() -> None:
@@ -52,9 +47,7 @@ Trailing paragraph.
 """
     )
 
-    first_block = doc.blocks[0]
-    assert first_block.block_type == "list"
-    assert isinstance(first_block, ListBlock)
-    assert first_block.ordered is True
-    assert first_block.items == ["first item", "second item"]
+    assert doc.blocks[0].block_type == "list"
+    assert doc.blocks[0].ordered is True
+    assert doc.blocks[0].items == ["first item", "second item"]
     assert doc.blocks[1].block_type == "paragraph"

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any, cast
 
 from docdiff.model import (
     DiffItem,
@@ -60,7 +59,7 @@ def test_document_to_dict_is_json_serializable() -> None:
         metadata={"title": "Sprint Report"},
     )
 
-    payload = cast(dict[str, Any], doc.to_dict())
+    payload = doc.to_dict()
     dumped = json.dumps(payload, sort_keys=True)
 
     assert payload["source_format"] == "md"
@@ -91,7 +90,7 @@ def test_diff_result_to_dict_is_json_serializable() -> None:
         ],
     )
 
-    payload = cast(dict[str, Any], result.to_dict())
+    payload = result.to_dict()
     dumped = json.dumps(payload, sort_keys=True)
 
     assert payload["granularity"] == "block+word"

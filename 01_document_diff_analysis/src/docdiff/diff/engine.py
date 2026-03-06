@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from difflib import SequenceMatcher
 from itertools import zip_longest
-from typing import Final, Literal
 
 from docdiff.model import (
     Block,
-    ChangeType,
     DiffItem,
     DiffResult,
     Document,
@@ -26,17 +24,17 @@ _TABLE_HEADER_SEPARATOR = "|"
 _TABLE_ROW_SEPARATOR = "||"
 _TABLE_SECTION_SEPARATOR = "::"
 _TEXT_PART_SEPARATOR = " "
-_WORD_DIFF_EQUAL: Final[ChangeType] = "equal"
-_WORD_DIFF_ADDED: Final[ChangeType] = "added"
-_WORD_DIFF_REMOVED: Final[ChangeType] = "removed"
-_CHANGE_EQUAL: Final[ChangeType] = "equal"
-_CHANGE_ADDED: Final[ChangeType] = "added"
-_CHANGE_REMOVED: Final[ChangeType] = "removed"
-_CHANGE_MODIFIED: Final[ChangeType] = "modified"
-_OPCODE_EQUAL: Final[Literal["equal"]] = "equal"
-_OPCODE_DELETE: Final[Literal["delete"]] = "delete"
-_OPCODE_INSERT: Final[Literal["insert"]] = "insert"
-_OPCODE_REPLACE: Final[Literal["replace"]] = "replace"
+_WORD_DIFF_EQUAL = "equal"
+_WORD_DIFF_ADDED = "added"
+_WORD_DIFF_REMOVED = "removed"
+_CHANGE_EQUAL = "equal"
+_CHANGE_ADDED = "added"
+_CHANGE_REMOVED = "removed"
+_CHANGE_MODIFIED = "modified"
+_OPCODE_EQUAL = "equal"
+_OPCODE_DELETE = "delete"
+_OPCODE_INSERT = "insert"
+_OPCODE_REPLACE = "replace"
 _WORD_DIFF_BLOCKS = _TEXTUAL_BLOCKS + (TableBlock,)
 
 
