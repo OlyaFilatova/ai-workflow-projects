@@ -46,3 +46,20 @@ class ServerError(ApiError):
 
 class TransportError(Exception):
     """Raised when the underlying HTTP transport fails."""
+
+
+def status_to_error(status_code: int) -> type[ApiError]:
+    """Map HTTP status codes to concrete API error types."""
+    if status_code == 400:
+        return BadRequestError
+    if status_code == 401:
+        return UnauthorizedError
+    if status_code == 403:
+        return ForbiddenError
+    if status_code == 404:
+        return NotFoundError
+    if 400 <= status_code < 500:
+        return ClientError
+    if status_code >= 500:
+        return ServerError
+    return ApiError

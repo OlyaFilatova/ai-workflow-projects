@@ -10,13 +10,7 @@ from urllib.parse import quote
 import httpx
 
 from openapi_to_sdk.runtime.errors import (
-    ApiError,
-    BadRequestError,
-    ClientError,
-    ForbiddenError,
-    NotFoundError,
-    ServerError,
-    UnauthorizedError,
+    status_to_error,
 )
 
 
@@ -139,7 +133,7 @@ class BaseClient:
             except (json.JSONDecodeError, ValueError):
                 parsed_error = None
 
-        exc_cls = _status_to_error(response.status_code)
+        exc_cls = status_to_error(response.status_code)
         raise exc_cls(
             message=f"HTTP request failed with status {response.status_code}",
             status_code=response.status_code,
@@ -147,19 +141,3 @@ class BaseClient:
             body=body_text,
             parsed_error=parsed_error,
         )
-
-
-def _status_to_error(status_code: int) -> type[ApiError]:
-    if status_code == 400:
-        return BadRequestError
-    if status_code == 401:
-        return UnauthorizedError
-    if status_code == 403:
-        return ForbiddenError
-    if status_code == 404:
-        return NotFoundError
-    if 400 <= status_code < 500:
-        return ClientError
-    if status_code >= 500:
-        return ServerError
-    return ApiError
