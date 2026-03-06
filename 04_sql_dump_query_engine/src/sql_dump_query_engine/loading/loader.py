@@ -5,10 +5,10 @@ from __future__ import annotations
 from ..diagnostics import WarningCollector
 from ..errors import LoadError
 from ..models import LoadStats, ParseEvent, TranslationArtifact
-from .batching import batch_insert_statement
 from ..parsing.pg_copy import parse_copy_header, parse_copy_row
 from ..parsing.splitter import split_statements
 from ..translation.translator import translate_statement
+from .batching import batch_insert_statement
 
 _INSERT_BATCH_SIZE = 500
 _COPY_BATCH_SIZE = 500
