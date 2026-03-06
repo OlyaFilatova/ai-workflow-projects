@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from docdiff.model import DiffItem, DiffResult
+from docdiff.model import DiffItem, DiffResult, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
 
 def _block_summary(item: DiffItem) -> str:
@@ -15,11 +15,11 @@ def _block_summary(item: DiffItem) -> str:
     if block is None:
         return "<empty>"
 
-    if block.block_type in {"heading", "paragraph"}:
+    if isinstance(block, (HeadingBlock, ParagraphBlock)):
         return block.text
-    if block.block_type == "list":
+    if isinstance(block, ListBlock):
         return "; ".join(block.items)
-    if block.block_type == "table":
+    if isinstance(block, TableBlock):
         header = " | ".join(block.header or [])
         body = " || ".join(" | ".join(row) for row in block.rows)
         return f"{header} || {body}" if header or body else "<table>"
