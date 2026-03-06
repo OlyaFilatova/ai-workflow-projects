@@ -8,7 +8,8 @@ import sys
 from auditpy.config import ScanConfig
 from auditpy.licenses import evaluate_licenses
 from auditpy.models import Report
-from auditpy.reporting import render_cli_summary, threshold_violated, write_json_report
+from auditpy.policy import threshold_violated
+from auditpy.reporting import render_cli_summary, write_json_report
 from auditpy.resolution import resolve_dependencies
 from auditpy.vulnerabilities import scan_vulnerabilities
 
