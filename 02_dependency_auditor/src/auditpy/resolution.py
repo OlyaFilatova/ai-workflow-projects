@@ -19,7 +19,13 @@ from auditpy.parsing import parse_requirements
 
 @dataclass(slots=True, frozen=True)
 class ResolutionFailure:
-    """A structured runtime failure produced during dependency resolution."""
+    """A structured runtime failure produced during dependency resolution.
+
+    Attributes:
+        category: Failure category label used by CLI handling.
+        message: Human-readable failure details.
+        exit_code: Process exit code associated with the failure.
+    """
 
     category: str
     message: str
@@ -28,7 +34,16 @@ class ResolutionFailure:
 
 @dataclass(slots=True)
 class ResolutionOutcome:
-    """Result container for dependency resolution outputs and warnings/errors."""
+    """Result container for dependency resolution outputs and warnings/errors.
+
+    Attributes:
+        nodes: Resolved package nodes.
+        edges: Resolved dependency edges.
+        dependency_paths: Paths from roots keyed by normalized package name.
+        distributions: Raw installed distribution metadata.
+        warnings: Non-fatal warnings collected during parsing/resolution.
+        error: Terminal runtime failure, if resolution did not succeed.
+    """
 
     nodes: list[PackageNode] = field(default_factory=list)
     edges: list[DependencyEdge] = field(default_factory=list)

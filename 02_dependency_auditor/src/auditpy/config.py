@@ -10,7 +10,14 @@ VALID_FAIL_THRESHOLDS = {"high", "critical"}
 
 @dataclass(slots=True, frozen=True)
 class ScanConfig:
-    """Validated runtime configuration for a scan run."""
+    """Validated runtime configuration for a scan run.
+
+    Attributes:
+        policy: License policy name to enforce.
+        fail_on: Vulnerability threshold that produces a non-zero exit code.
+        cache_ttl_hours: Cache freshness window in hours.
+        verbose: Whether verbose logging is enabled.
+    """
 
     policy: str = "no-gpl"
     fail_on: str = "high"

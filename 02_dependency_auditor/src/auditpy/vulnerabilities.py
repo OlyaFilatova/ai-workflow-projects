@@ -19,7 +19,12 @@ OSV_BATCH_URL = "https://api.osv.dev/v1/querybatch"
 
 @dataclass(slots=True)
 class VulnerabilityScanResult:
-    """Vulnerability scanning output with findings and non-fatal warnings."""
+    """Vulnerability scanning output with findings and non-fatal warnings.
+
+    Attributes:
+        findings: Vulnerability findings produced from cached/fetched OSV data.
+        warnings: Non-fatal warnings encountered during scan execution.
+    """
 
     findings: list[VulnerabilityFinding]
     warnings: list[str]

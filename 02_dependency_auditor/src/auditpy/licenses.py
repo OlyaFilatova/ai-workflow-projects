@@ -29,7 +29,12 @@ NORMALIZATION_MAP = {
 
 @dataclass(slots=True)
 class LicenseScanResult:
-    """License scanning output with findings and non-fatal warnings."""
+    """License scanning output with findings and non-fatal warnings.
+
+    Attributes:
+        findings: Per-package license evaluation findings.
+        warnings: Non-fatal warnings for unknown/ambiguous licenses.
+    """
 
     findings: list[LicenseFinding]
     warnings: list[str]
