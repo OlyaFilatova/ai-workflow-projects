@@ -6,7 +6,7 @@ import re
 
 from ..diagnostics import WarningCollector
 from ..errors import LoadError
-from ..models import LoadStats, ParseEvent
+from ..models import LoadStats, ParseEvent, TranslationArtifact
 from ..parsing.pg_copy import parse_copy_header, parse_copy_row
 from ..parsing.splitter import split_statements
 from ..translation.translator import translate_statement
@@ -27,31 +27,40 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
         stats.parsed_statements += 1
 
         if event.kind == "copy":
-            copy_chunks = _load_copy_event(engine, event)
-            stats.executed_statements += copy_chunks
+            stats.executed_statements += _load_copy_event(engine, event)
             continue
 
         artifact = translate_statement(event)
-        warnings.events.extend(artifact.warnings)
+        _collect_translation_warnings(warnings, artifact)
 
         if artifact.skipped or not artifact.sql:
             stats.skipped_statements += 1
             continue
 
-        try:
-            for statement_sql in _batch_insert_statement(artifact.sql, batch_size=500):
-                # TODO: consider using interface for dependency inversion
-                engine.execute(statement_sql)
-                stats.executed_statements += 1
-        except Exception as exc:  # pragma: no cover - backend error surface
-            raise LoadError(
-                "Failed to execute translated SQL during dump load. Check unsupported dialect syntax.",
-                statement_line=event.statement.line,
-                statement_text=event.statement.text,
-            ) from exc
+        stats.executed_statements += _execute_translated_statement(engine, event, artifact.sql)
 
     stats.warnings.extend(warnings.events)
     return stats
+
+
+def _collect_translation_warnings(warnings: WarningCollector, artifact: TranslationArtifact) -> None:
+    warnings.events.extend(artifact.warnings)
+
+
+def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -> int:
+    executed_statements = 0
+    try:
+        for statement_sql in _batch_insert_statement(sql, batch_size=500):
+            # TODO: consider using interface for dependency inversion
+            engine.execute(statement_sql)
+            executed_statements += 1
+    except Exception as exc:  # pragma: no cover - backend error surface
+        raise LoadError(
+            "Failed to execute translated SQL during dump load. Check unsupported dialect syntax.",
+            statement_line=event.statement.line,
+            statement_text=event.statement.text,
+        ) from exc
+    return executed_statements
 
 
 def _load_copy_event(engine: object, event: ParseEvent) -> int:
