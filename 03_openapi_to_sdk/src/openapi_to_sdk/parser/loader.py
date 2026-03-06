@@ -91,43 +91,86 @@ def _resolve_node(
     stack: set[tuple[Path, str]],
 ) -> Any:
     if isinstance(node, dict):
-        if "$ref" in node:
-            ref_value = node["$ref"]
-            if not isinstance(ref_value, str):
-                raise OpenAPILoadError(f"$ref must be a string in {current_file}")
+        return _resolve_mapping_node(node, current_file=current_file, cache=cache, stack=stack)
+    if isinstance(node, list):
+        return _resolve_sequence_node(node, current_file=current_file, cache=cache, stack=stack)
+    return node
 
-            resolved_ref = _resolve_ref(
-                ref_value,
+
+def _resolve_mapping_node(
+    node: dict[str, Any],
+    *,
+    current_file: Path,
+    cache: dict[Path, dict[str, Any]],
+    stack: set[tuple[Path, str]],
+) -> Any:
+    if "$ref" in node:
+        return _resolve_ref_mapping(node, current_file=current_file, cache=cache, stack=stack)
+    return {
+        key: _resolve_node(value, current_file=current_file, cache=cache, stack=stack)
+        for key, value in node.items()
+    }
+
+
+def _resolve_ref_mapping(
+    node: dict[str, Any],
+    *,
+    current_file: Path,
+    cache: dict[Path, dict[str, Any]],
+    stack: set[tuple[Path, str]],
+) -> Any:
+    ref_value = node["$ref"]
+    if not isinstance(ref_value, str):
+        raise OpenAPILoadError(f"$ref must be a string in {current_file}")
+
+    resolved_ref = _resolve_ref(
+        ref_value,
+        current_file=current_file,
+        cache=cache,
+        stack=stack,
+    )
+    if len(node) == 1:
+        return resolved_ref
+    return _merge_ref_overrides(
+        resolved_ref,
+        node,
+        current_file=current_file,
+        cache=cache,
+        stack=stack,
+    )
+
+
+def _merge_ref_overrides(
+    resolved_ref: Any,
+    node: dict[str, Any],
+    *,
+    current_file: Path,
+    cache: dict[Path, dict[str, Any]],
+    stack: set[tuple[Path, str]],
+) -> dict[str, Any]:
+    merged = dict(resolved_ref) if isinstance(resolved_ref, dict) else {"value": resolved_ref}
+    for key, value in node.items():
+        if key != "$ref":
+            merged[key] = _resolve_node(
+                value,
                 current_file=current_file,
                 cache=cache,
                 stack=stack,
             )
-            if len(node) == 1:
-                return resolved_ref
+    return merged
 
-            merged = dict(resolved_ref) if isinstance(resolved_ref, dict) else {"value": resolved_ref}
-            for key, value in node.items():
-                if key != "$ref":
-                    merged[key] = _resolve_node(
-                        value,
-                        current_file=current_file,
-                        cache=cache,
-                        stack=stack,
-                    )
-            return merged
 
-        return {
-            key: _resolve_node(value, current_file=current_file, cache=cache, stack=stack)
-            for key, value in node.items()
-        }
-
-    if isinstance(node, list):
-        return [
-            _resolve_node(item, current_file=current_file, cache=cache, stack=stack)
-            for item in node
-        ]
-
-    return node
+def _resolve_sequence_node(
+    node: list[Any],
+    *,
+    current_file: Path,
+    cache: dict[Path, dict[str, Any]],
+    stack: set[tuple[Path, str]],
+) -> list[Any]:
+    return [
+        _resolve_node(item, current_file=current_file, cache=cache, stack=stack)
+        for item in node
+    ]
 
 
 def _resolve_ref(
