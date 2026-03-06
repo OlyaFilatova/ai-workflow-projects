@@ -174,9 +174,7 @@ def merge_all_of(schema: dict[str, Any], ctx: MappingContext) -> dict[str, Any]:
             raise UnsupportedSchemaError("Nested discriminator/union in allOf is out of scope")
 
         if "$ref" in piece:
-            ref_type = ref_to_type(str(piece["$ref"]), ctx)
-            if ref_type in ctx.schema_name_map.values():
-                merged.setdefault("x_ref_parts", []).append(ref_type)
+            ref_to_type(str(piece["$ref"]), ctx)
             continue
 
         if not (
