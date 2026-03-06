@@ -12,3 +12,4 @@ class WarningCollector:
     """Collect non-fatal warnings during parsing/translation/loading."""
 
     events: list[WarningEvent] = field(default_factory=list)
+    """Accumulated warning events."""

@@ -14,6 +14,9 @@ def split_statements(text: str) -> list[ParseEvent]:
     """Split SQL dump text into parse events.
 
     Supports semicolon-terminated SQL and PostgreSQL COPY blocks.
+
+    Args:
+        text: Full dump text to parse.
     """
 
     if "\x00" in text:
@@ -49,6 +52,13 @@ def split_statements(text: str) -> list[ParseEvent]:
 
 
 def _consume_copy_block(lines: list[str], header_idx: int) -> tuple[ParseEvent, int]:
+    """Parse COPY data rows until terminator and return event plus next index.
+
+    Args:
+        lines: Full dump text split into lines (with newlines preserved).
+        header_idx: Index of the COPY header line in ``lines``.
+    """
+
     header_line_number = header_idx + 1
     header_line = lines[header_idx]
     copy_rows: list[str] = []
@@ -69,6 +79,13 @@ def _consume_copy_block(lines: list[str], header_idx: int) -> tuple[ParseEvent, 
 
 
 def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
+    """Split a non-COPY SQL chunk into statements.
+
+    Args:
+        text: Raw SQL chunk to split on statement boundaries.
+        start_line: Source line number where ``text`` begins.
+    """
+
     events: list[ParseEvent] = []
     buffer: list[str] = []
     in_single = False
@@ -172,8 +189,13 @@ def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
 
     return events
 
-# TODO: Use correct return type
 def _detect_dialect(statement: str) -> str:
+    """Infer source dialect from SQL statement text.
+
+    Args:
+        statement: Statement text to classify.
+    """
+
     upper = statement.upper()
     if "`" in statement or "LOCK TABLES" in upper or "ENGINE=" in upper:
         return "mysql"

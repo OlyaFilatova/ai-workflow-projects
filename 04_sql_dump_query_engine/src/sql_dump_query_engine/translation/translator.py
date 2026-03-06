@@ -25,7 +25,11 @@ _SKIP_PREFIXES = (
 
 
 def translate_statement(event: ParseEvent) -> TranslationArtifact:
-    """Translate source SQL into DuckDB-compatible SQL."""
+    """Translate source SQL into DuckDB-compatible SQL.
+
+    Args:
+        event: Parsed statement event to translate.
+    """
 
     original = event.statement
     sql = original.text.strip()
@@ -74,6 +78,12 @@ def translate_statement(event: ParseEvent) -> TranslationArtifact:
 
 
 def _translate_mysql(sql: str) -> str:
+    """Apply MySQL-specific statement rewrites.
+
+    Args:
+        sql: Source statement text detected as MySQL dialect.
+    """
+
     translated = sql.replace("`", '"')
 
     # Remove MySQL table options that DuckDB does not support.
@@ -96,6 +106,12 @@ def _translate_mysql(sql: str) -> str:
 
 
 def _rewrite_mysql_create_table_indexes(sql: str) -> str:
+    """Rewrite/strip MySQL CREATE TABLE index definitions.
+
+    Args:
+        sql: Candidate CREATE TABLE statement text.
+    """
+
     stripped_upper = sql.strip().upper()
     if not stripped_upper.startswith("CREATE TABLE"):
         return sql
@@ -132,6 +148,12 @@ def _rewrite_mysql_create_table_indexes(sql: str) -> str:
 
 
 def _rewrite_unique_key_definition(definition: str) -> str:
+    """Normalize MySQL UNIQUE KEY syntax into ANSI-like UNIQUE.
+
+    Args:
+        definition: One CREATE TABLE definition segment.
+    """
+
     match = re.match(
         r'^\s*UNIQUE\s+(?:KEY|INDEX)(?:\s+(?:"[^"]+"|[A-Za-z_][\w$]*))?\s*\((?P<columns>.+)\)\s*(?:USING\s+\w+)?\s*$',
         definition,
@@ -140,7 +162,15 @@ def _rewrite_unique_key_definition(definition: str) -> str:
     if not match:
         return definition
     return f"UNIQUE ({match.group('columns').strip()})"
+
+
 def _translate_postgres(sql: str) -> str:
+    """Apply PostgreSQL-specific statement rewrites.
+
+    Args:
+        sql: Source statement text detected as PostgreSQL dialect.
+    """
+
     translated = sql
     translated = re.sub(r"\bpublic\.", "", translated, flags=re.IGNORECASE)
     translated = re.sub(r"::\s*\w+", "", translated)

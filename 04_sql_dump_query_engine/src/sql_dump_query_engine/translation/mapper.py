@@ -58,7 +58,11 @@ _KNOWN_TYPES = {
 
 
 def normalize_type_tokens(sql: str) -> str:
-    """Apply lightweight type normalization replacements."""
+    """Apply lightweight type normalization replacements.
+
+    Args:
+        sql: SQL statement text to normalize.
+    """
 
     normalized = sql
     for pattern, replacement in TYPE_PATTERNS:
@@ -67,11 +71,21 @@ def normalize_type_tokens(sql: str) -> str:
 
 
 def apply_enum_fallback(sql: str) -> tuple[str, list[str]]:
-    """Map ENUM definitions to TEXT and emit lossy warnings."""
+    """Map ENUM definitions to TEXT and emit lossy warnings.
+
+    Args:
+        sql: SQL statement text to scan for ENUM types.
+    """
 
     warnings: list[str] = []
 
     def replace_enum(match: re.Match[str]) -> str:
+        """Replace a matched ENUM definition with TEXT.
+
+        Args:
+            match: Regex match object for an ENUM type token.
+        """
+
         warnings.append("ENUM mapped to TEXT")
         return "TEXT"
 
@@ -80,7 +94,11 @@ def apply_enum_fallback(sql: str) -> tuple[str, list[str]]:
 
 
 def apply_unknown_type_fallback(sql: str) -> tuple[str, list[str]]:
-    """Replace unsupported CREATE TABLE column types with TEXT."""
+    """Replace unsupported CREATE TABLE column types with TEXT.
+
+    Args:
+        sql: SQL statement text to inspect and rewrite.
+    """
 
     stripped_upper = sql.strip().upper()
     if not stripped_upper.startswith("CREATE TABLE"):

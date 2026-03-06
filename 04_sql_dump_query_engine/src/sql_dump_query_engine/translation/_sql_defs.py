@@ -4,7 +4,11 @@ from __future__ import annotations
 
 
 def split_definitions(body: str) -> list[str]:
-    """Split a CREATE TABLE body on top-level commas."""
+    """Split a CREATE TABLE body on top-level commas.
+
+    Args:
+        body: SQL text inside ``CREATE TABLE (...)``.
+    """
 
     parts: list[str] = []
     start = 0

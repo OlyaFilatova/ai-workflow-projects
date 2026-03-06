@@ -21,7 +21,12 @@ _COPY_LOAD_ERROR_MESSAGE = (
 
 
 def load_into_engine(engine: object, text: str) -> LoadStats:
-    """Load dump text into DuckDB via parser/translator pipeline."""
+    """Load SQL dump text into the provided engine.
+
+    Args:
+        engine: Database engine adapter with execute/executemany methods.
+        text: Full SQL dump text.
+    """
 
     stats = LoadStats()
     warning_collector = WarningCollector()
@@ -49,10 +54,25 @@ def _collect_translation_warnings(
     warning_collector: WarningCollector,
     artifact: TranslationArtifact,
 ) -> None:
+    """Collect warnings produced while translating one parse event.
+
+    Args:
+        warning_collector: Mutable warning accumulator.
+        artifact: Translation result containing warning events.
+    """
+
     warning_collector.events.extend(artifact.warnings)
 
 
 def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -> int:
+    """Execute translated SQL and return executed statement count.
+
+    Args:
+        engine: Database engine adapter with an execute method.
+        event: Source parse event for contextual error reporting.
+        sql: Translated SQL text to execute.
+    """
+
     executed_statement_count = 0
     try:
         for statement_sql in batch_insert_statement(sql, batch_size=_INSERT_BATCH_SIZE):
@@ -69,6 +89,13 @@ def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -
 
 
 def _load_copy_event(engine: object, event: ParseEvent) -> int:
+    """Load rows from a PostgreSQL COPY parse event.
+
+    Args:
+        engine: Database engine adapter with an executemany method.
+        event: COPY parse event with header statement and optional rows.
+    """
+
     if event.copy_rows is None:
         return 0
 

@@ -11,6 +11,13 @@ _INSERT_VALUES_RE = re.compile(
 
 
 def batch_insert_statement(sql: str, batch_size: int) -> list[str]:
+    """Split multi-row INSERT statements into bounded-size batches.
+
+    Args:
+        sql: SQL statement text to inspect.
+        batch_size: Maximum number of tuples per emitted INSERT.
+    """
+
     match = _INSERT_VALUES_RE.match(sql.strip())
     if not match:
         return [sql]
@@ -29,6 +36,12 @@ def batch_insert_statement(sql: str, batch_size: int) -> list[str]:
 
 
 def _split_tuples(values_blob: str) -> list[str]:
+    """Split a VALUES blob into tuple strings.
+
+    Args:
+        values_blob: Text after the VALUES keyword in an INSERT statement.
+    """
+
     tuples: list[str] = []
     start = 0
     depth = 0
