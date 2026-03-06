@@ -29,26 +29,26 @@ DEFAULT_OPERATION_ID_TEMPLATE = "{method}_{path}"
 
 
 def build_auth_schemes(components: dict[str, Any]) -> list[AuthSchemeIR]:
-    schemes = as_dict(components.get("securitySchemes"))
-    output: list[AuthSchemeIR] = []
+    raw_schemes = as_dict(components.get("securitySchemes"))
+    auth_schemes: list[AuthSchemeIR] = []
     name_registry = NameRegistry()
 
-    for raw_name in sorted(schemes):
-        source = as_dict(schemes[raw_name])
-        scheme_type = str(source.get("type", ""))
+    for raw_name in sorted(raw_schemes):
+        scheme_data = as_dict(raw_schemes[raw_name])
+        scheme_type = str(scheme_data.get("type", ""))
         python_name = name_registry.unique(to_snake_case(raw_name))
 
         if scheme_type == "apiKey":
-            output.append(
+            auth_schemes.append(
                 AuthSchemeIR(
                     name=raw_name,
                     python_name=python_name,
                     kind="apiKey",
-                    location=str(source.get("in", DEFAULT_APIKEY_LOCATION)),
+                    location=str(scheme_data.get("in", DEFAULT_APIKEY_LOCATION)),
                 )
             )
-        elif scheme_type == "http" and str(source.get("scheme", "")).lower() == "bearer":
-            output.append(
+        elif scheme_type == "http" and str(scheme_data.get("scheme", "")).lower() == "bearer":
+            auth_schemes.append(
                 AuthSchemeIR(
                     name=raw_name,
                     python_name=python_name,
@@ -57,7 +57,7 @@ def build_auth_schemes(components: dict[str, Any]) -> list[AuthSchemeIR]:
                 )
             )
 
-    return output
+    return auth_schemes
 
 
 def build_operations(
@@ -148,15 +148,15 @@ def build_request_body(raw_request_body: Any, ctx: MappingContext) -> RequestBod
 
 
 def build_responses(raw_responses: Any, ctx: MappingContext) -> list[ResponseIR]:
-    responses = as_dict(raw_responses)
-    output: list[ResponseIR] = []
+    response_map = as_dict(raw_responses)
+    response_models: list[ResponseIR] = []
 
-    for status in sorted(responses):
-        source = as_dict(responses[status])
-        content = as_dict(source.get("content"))
+    for status in sorted(response_map):
+        response_data = as_dict(response_map[status])
+        content = as_dict(response_data.get("content"))
         media = as_dict(content.get(JSON_MEDIA_TYPE)) if JSON_MEDIA_TYPE in content else None
         schema = as_dict(media.get("schema")) if media is not None else None
-        output.append(
+        response_models.append(
             ResponseIR(
                 status_code=status,
                 content_type=JSON_MEDIA_TYPE if media is not None else None,
@@ -164,4 +164,4 @@ def build_responses(raw_responses: Any, ctx: MappingContext) -> list[ResponseIR]
             )
         )
 
-    return output
+    return response_models
