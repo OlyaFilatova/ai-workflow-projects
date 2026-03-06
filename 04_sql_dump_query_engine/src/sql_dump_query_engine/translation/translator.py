@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from ..models import ParseEvent, TranslationArtifact, WarningEvent
+from ._sql_defs import split_definitions
 from .mapper import apply_enum_fallback, apply_unknown_type_fallback, normalize_type_tokens
 
 _UNSUPPORTED_PREFIXES = (
@@ -105,7 +106,7 @@ def _rewrite_mysql_create_table_indexes(sql: str) -> str:
         return sql
 
     body = sql[open_idx + 1 : close_idx]
-    definitions = _split_definitions(body)
+    definitions = split_definitions(body)
     rewritten: list[str] = []
 
     for definition in definitions:
@@ -139,31 +140,6 @@ def _rewrite_unique_key_definition(definition: str) -> str:
     if not match:
         return definition
     return f"UNIQUE ({match.group('columns').strip()})"
-
-
-def _split_definitions(body: str) -> list[str]:
-    parts: list[str] = []
-    start = 0
-    depth = 0
-    in_single = False
-    in_double = False
-    for idx, char in enumerate(body):
-        if char == "'" and not in_double:
-            in_single = not in_single
-        elif char == '"' and not in_single:
-            in_double = not in_double
-        elif not in_single and not in_double:
-            if char == "(":
-                depth += 1
-            elif char == ")":
-                depth -= 1
-            elif char == "," and depth == 0:
-                parts.append(body[start:idx])
-                start = idx + 1
-    parts.append(body[start:])
-    return parts
-
-
 def _translate_postgres(sql: str) -> str:
     translated = sql
     translated = re.sub(r"\bpublic\.", "", translated, flags=re.IGNORECASE)
