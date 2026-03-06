@@ -74,25 +74,12 @@ def _parse_file(
         if not stripped or stripped.startswith("#"):
             continue
 
-        if stripped.startswith(("-r ", "--requirement ")):
-            include_target = stripped.split(maxsplit=1)[1].strip()
-            include_path = (resolved.parent / include_target).resolve()
-            if not include_path.exists():
-                raise RequirementsParseError(
-                    f"{resolved}:{index} included file not found: {include_target}"
-                )
+        include_path = _resolve_include_path(stripped, resolved, index)
+        if include_path is not None:
             _parse_file(include_path, requirements, warnings, visited=visited, stack=stack)
             continue
 
-        if stripped.startswith(("-e ", "--editable ")):
-            raise RequirementsParseError(
-                f"{resolved}:{index} editable installs are unsupported: {stripped}"
-            )
-
-        if _looks_like_direct_reference(stripped):
-            raise RequirementsParseError(
-                f"{resolved}:{index} direct URL/VCS dependencies are unsupported: {stripped}"
-            )
+        _raise_if_unsupported_entry(stripped, resolved, index)
 
         try:
             req = Requirement(stripped)
@@ -125,3 +112,26 @@ def _looks_like_direct_reference(line: str) -> bool:
     if " @ " in line and ("http://" in lowered or "https://" in lowered or "git+" in lowered):
         return True
     return False
+
+
+def _resolve_include_path(line: str, base_file: Path, line_number: int) -> Path | None:
+    if not line.startswith(("-r ", "--requirement ")):
+        return None
+
+    include_target = line.split(maxsplit=1)[1].strip()
+    include_path = (base_file.parent / include_target).resolve()
+    if include_path.exists():
+        return include_path
+
+    raise RequirementsParseError(f"{base_file}:{line_number} included file not found: {include_target}")
+
+
+def _raise_if_unsupported_entry(line: str, file_path: Path, line_number: int) -> None:
+    if line.startswith(("-e ", "--editable ")):
+        raise RequirementsParseError(
+            f"{file_path}:{line_number} editable installs are unsupported: {line}"
+        )
+    if _looks_like_direct_reference(line):
+        raise RequirementsParseError(
+            f"{file_path}:{line_number} direct URL/VCS dependencies are unsupported: {line}"
+        )
