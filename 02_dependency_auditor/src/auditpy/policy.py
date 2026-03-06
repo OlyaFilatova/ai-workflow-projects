@@ -6,6 +6,12 @@ from auditpy.models import Report, Severity
 
 
 def threshold_violated(report: Report, *, fail_on: str) -> bool:
+    """Return whether vulnerabilities/licenses exceed the configured fail threshold.
+
+    Args:
+        report: Report model to evaluate.
+        fail_on: Severity threshold used for vulnerability failures.
+    """
     severity_rank = {
         Severity.LOW: 1,
         Severity.MEDIUM: 2,

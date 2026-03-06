@@ -10,6 +10,8 @@ VALID_FAIL_THRESHOLDS = {"high", "critical"}
 
 @dataclass(slots=True, frozen=True)
 class ScanConfig:
+    """Validated runtime configuration for a scan run."""
+
     policy: str = "no-gpl"
     fail_on: str = "high"
     cache_ttl_hours: int = 24
@@ -24,6 +26,14 @@ class ScanConfig:
         cache_ttl_hours: int = 24,
         verbose: bool = False,
     ) -> ScanConfig:
+        """Create a validated configuration instance from raw inputs.
+
+        Args:
+            policy: License policy name to enforce.
+            fail_on: Vulnerability threshold that produces a non-zero exit code.
+            cache_ttl_hours: Cache freshness window in hours.
+            verbose: Whether verbose logging is enabled.
+        """
         if policy not in VALID_POLICIES:
             supported = ", ".join(sorted(VALID_POLICIES))
             raise ValueError(f"Unsupported policy '{policy}'. Supported policies: {supported}")

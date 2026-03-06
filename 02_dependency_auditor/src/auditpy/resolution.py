@@ -19,6 +19,8 @@ from auditpy.parsing import parse_requirements
 
 @dataclass(slots=True, frozen=True)
 class ResolutionFailure:
+    """A structured runtime failure produced during dependency resolution."""
+
     category: str
     message: str
     exit_code: int = 2
@@ -26,6 +28,8 @@ class ResolutionFailure:
 
 @dataclass(slots=True)
 class ResolutionOutcome:
+    """Result container for dependency resolution outputs and warnings/errors."""
+
     nodes: list[PackageNode] = field(default_factory=list)
     edges: list[DependencyEdge] = field(default_factory=list)
     dependency_paths: dict[str, list[list[str]]] = field(default_factory=dict)
@@ -35,11 +39,16 @@ class ResolutionOutcome:
 
     @property
     def ok(self) -> bool:
+        """Return True when resolution completed without a terminal error."""
         return self.error is None
 
 
 def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
-    """Resolve dependency graph from requirements file using a temporary virtual environment."""
+    """Resolve dependency graph from requirements file using a temporary virtual environment.
+
+    Args:
+        requirements_file: Path to the root requirements file.
+    """
     req_path = Path(requirements_file)
     if not req_path.exists():
         return _runtime_error_outcome(
@@ -87,6 +96,12 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
 
 
 def _runtime_error_outcome(message: str, *, warnings: list[str] | None = None) -> ResolutionOutcome:
+    """Build a standardized runtime-failure resolution outcome.
+
+    Args:
+        message: Human-readable runtime error message.
+        warnings: Optional warning messages collected before failure.
+    """
     return ResolutionOutcome(
         warnings=list(warnings or []),
         error=ResolutionFailure(category="runtime", message=message),
@@ -94,17 +109,33 @@ def _runtime_error_outcome(message: str, *, warnings: list[str] | None = None) -
 
 
 def _create_venv(venv_dir: Path) -> None:
+    """Create an isolated virtual environment used for dependency installation.
+
+    Args:
+        venv_dir: Target directory for the virtual environment.
+    """
     builder = venv.EnvBuilder(with_pip=True, clear=True)
     builder.create(venv_dir)
 
 
 def _venv_python(venv_dir: Path) -> Path:
+    """Return the interpreter path inside the given virtual environment.
+
+    Args:
+        venv_dir: Virtual environment directory.
+    """
     if sys.platform.startswith("win"):
         return venv_dir / "Scripts" / "python.exe"
     return venv_dir / "bin" / "python"
 
 
 def _pip_install_requirements(python_bin: Path, requirements_file: Path) -> None:
+    """Install requirements into the temporary environment via pip.
+
+    Args:
+        python_bin: Interpreter path from the temporary virtual environment.
+        requirements_file: Requirements file to install.
+    """
     cmd = [
         str(python_bin),
         "-m",
@@ -120,6 +151,11 @@ def _pip_install_requirements(python_bin: Path, requirements_file: Path) -> None
 
 
 def _collect_installed_distributions(python_bin: Path) -> list[dict[str, object]]:
+    """Collect installed distribution metadata from the temporary environment.
+
+    Args:
+        python_bin: Interpreter path from the temporary virtual environment.
+    """
     script = (
         "import json\n"
         "from importlib import metadata\n"
@@ -153,6 +189,11 @@ def _collect_installed_distributions(python_bin: Path) -> list[dict[str, object]
 def _build_edges(
     installed: list[dict[str, object]],
 ) -> tuple[list[DependencyEdge], dict[str, set[str]]]:
+    """Build dependency edges and adjacency map from installed metadata.
+
+    Args:
+        installed: Installed distribution metadata records.
+    """
     package_names_by_normalized = {
         canonicalize_name(str(distribution["name"])): str(distribution["name"])
         for distribution in installed
@@ -194,6 +235,12 @@ def _build_paths(
     root_names: list[str],
     adjacency: dict[str, set[str]],
 ) -> dict[str, list[list[str]]]:
+    """Build deterministic dependency paths from each requested root package.
+
+    Args:
+        root_names: Normalized names requested directly by the user.
+        adjacency: Graph adjacency map keyed by normalized package name.
+    """
     paths_by_target: dict[str, list[list[str]]] = {}
 
     for root in root_names:

@@ -9,6 +9,8 @@ from typing import Any
 
 
 class Severity(StrEnum):
+    """Supported vulnerability severity levels."""
+
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
@@ -17,20 +19,26 @@ class Severity(StrEnum):
 
 @dataclass(slots=True, frozen=True)
 class PackageNode:
+    """A resolved package node in the dependency graph."""
+
     name: str
     version: str
 
     def to_dict(self) -> dict[str, str]:
+        """Serialize the node for report output."""
         return {"name": self.name, "version": self.version}
 
 
 @dataclass(slots=True, frozen=True)
 class DependencyEdge:
+    """A directed dependency relationship between two packages."""
+
     source: str
     target: str
     requirement: str | None = None
 
     def to_dict(self) -> dict[str, str | None]:
+        """Serialize the edge for report output."""
         return {
             "source": self.source,
             "target": self.target,
@@ -40,6 +48,8 @@ class DependencyEdge:
 
 @dataclass(slots=True, frozen=True)
 class VulnerabilityFinding:
+    """A vulnerability detected for a resolved package."""
+
     package: str
     version: str
     vuln_id: str
@@ -48,6 +58,7 @@ class VulnerabilityFinding:
     paths: list[list[str]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the vulnerability finding for report output."""
         return {
             "package": self.package,
             "version": self.version,
@@ -60,6 +71,8 @@ class VulnerabilityFinding:
 
 @dataclass(slots=True, frozen=True)
 class LicenseFinding:
+    """A normalized license evaluation result for a package."""
+
     package: str
     version: str
     declared: str | None
@@ -69,6 +82,7 @@ class LicenseFinding:
     paths: list[list[str]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the license finding for report output."""
         return {
             "package": self.package,
             "version": self.version,
@@ -82,6 +96,8 @@ class LicenseFinding:
 
 @dataclass(slots=True)
 class Report:
+    """Top-level report model containing scan results and metadata."""
+
     python_version: str
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     nodes: list[PackageNode] = field(default_factory=list)
@@ -90,6 +106,7 @@ class Report:
     licenses: list[LicenseFinding] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the report with deterministic ordering."""
         ordered_nodes = sorted(self.nodes, key=lambda node: (node.name.lower(), node.version))
         ordered_edges = sorted(self.edges, key=lambda edge: (edge.source.lower(), edge.target.lower(), edge.requirement or ""))
         ordered_vulns = sorted(

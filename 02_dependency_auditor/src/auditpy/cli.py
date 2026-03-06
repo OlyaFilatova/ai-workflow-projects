@@ -15,6 +15,11 @@ from auditpy.vulnerabilities import scan_vulnerabilities
 
 
 def _parse_policy(value: str) -> str:
+    """Validate and normalize the supported policy CLI option.
+
+    Args:
+        value: Raw policy value supplied via CLI arguments.
+    """
     if value != "no-gpl":
         raise argparse.ArgumentTypeError(
             f"Unsupported policy '{value}'. Only 'no-gpl' is currently supported."
@@ -23,6 +28,7 @@ def _parse_policy(value: str) -> str:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the top-level CLI argument parser."""
     parser = argparse.ArgumentParser(prog="auditpy", description="Python dependency auditor")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -43,6 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _run_scan(args: argparse.Namespace) -> int:
+    """Execute the scan command and return the process exit code.
+
+    Args:
+        args: Parsed CLI namespace for the `scan` subcommand.
+    """
     cfg = ScanConfig.create(
         policy=args.policy,
         fail_on=args.fail_on,
@@ -89,6 +100,11 @@ def _run_scan(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point used by both module and console script execution.
+
+    Args:
+        argv: Optional argument list. When None, arguments are read from `sys.argv`.
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
     return args.func(args)

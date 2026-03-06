@@ -19,7 +19,11 @@ LICENSE_REMEDIATION_TEXT = "remediation: replace dependency or adjust policy"
 
 
 def render_cli_summary(report: Report) -> str:
-    """Render a human-readable summary from report data."""
+    """Render a human-readable summary from report data.
+
+    Args:
+        report: Report model with dependencies, vulnerabilities, and license findings.
+    """
     severity_counts = {severity.value: 0 for severity in SEVERITY_ORDER}
     for finding in report.vulnerabilities:
         severity_counts[finding.severity.value] += 1
@@ -58,6 +62,12 @@ def render_cli_summary(report: Report) -> str:
 
 
 def write_json_report(report: Report, output_path: str) -> None:
+    """Write the report JSON payload to disk.
+
+    Args:
+        report: Report model to serialize.
+        output_path: Destination path for the JSON report file.
+    """
     data = report.to_dict()
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -16,6 +16,8 @@ class RequirementsParseError(ValueError):
 
 @dataclass(slots=True, frozen=True)
 class RootRequirement:
+    """A parsed root requirement entry with source metadata."""
+
     name: str
     specifier: str
     extras: tuple[str, ...]
@@ -26,17 +28,24 @@ class RootRequirement:
 
     @property
     def normalized_name(self) -> str:
+        """Return normalized package name for graph/path matching."""
         return canonicalize_name(self.name)
 
 
 @dataclass(slots=True)
 class ParseResult:
+    """Parser output containing accepted requirements and non-fatal warnings."""
+
     requirements: list[RootRequirement]
     warnings: list[str]
 
 
 def parse_requirements(requirements_file: str) -> ParseResult:
-    """Parse requirements recursively with marker support and deterministic order."""
+    """Parse requirements recursively with marker support and deterministic order.
+
+    Args:
+        requirements_file: Path to the root requirements file.
+    """
     root = Path(requirements_file)
     if not root.exists():
         raise RequirementsParseError(f"Requirements file not found: {requirements_file}")
@@ -55,6 +64,15 @@ def _parse_file(
     visited: set[Path],
     stack: list[Path],
 ) -> None:
+    """Parse a requirements file and recursively follow include directives.
+
+    Args:
+        file_path: Path to the requirements file currently being parsed.
+        requirements: Mutable accumulator for accepted root requirements.
+        warnings: Mutable accumulator for non-fatal parser warnings.
+        visited: Set of already-parsed file paths.
+        stack: Include stack used to detect recursive includes.
+    """
     resolved = file_path.resolve()
     if resolved in stack:
         chain = " -> ".join(str(path) for path in [*stack, resolved])
@@ -101,6 +119,11 @@ def _parse_file(
 
 
 def _looks_like_direct_reference(line: str) -> bool:
+    """Return True when a requirement line looks like a direct URL/VCS reference.
+
+    Args:
+        line: Requirement line text without trailing newline.
+    """
     lowered = line.lower()
     if lowered.startswith(("git+", "hg+", "svn+", "bzr+", "http://", "https://")):
         return True
@@ -110,6 +133,13 @@ def _looks_like_direct_reference(line: str) -> bool:
 
 
 def _resolve_include_path(line: str, base_file: Path, line_number: int) -> Path | None:
+    """Resolve an include directive path or return None when line is not an include.
+
+    Args:
+        line: Requirement line text being processed.
+        base_file: File currently being parsed.
+        line_number: 1-based line number in `base_file`.
+    """
     if not line.startswith(("-r ", "--requirement ")):
         return None
 
@@ -122,6 +152,13 @@ def _resolve_include_path(line: str, base_file: Path, line_number: int) -> Path 
 
 
 def _raise_if_unsupported_entry(line: str, file_path: Path, line_number: int) -> None:
+    """Raise a parse error for unsupported requirement entry syntaxes.
+
+    Args:
+        line: Requirement line text being processed.
+        file_path: Path to the file containing `line`.
+        line_number: 1-based line number in `file_path`.
+    """
     if line.startswith(("-e ", "--editable ")):
         raise RequirementsParseError(
             f"{file_path}:{line_number} editable installs are unsupported: {line}"

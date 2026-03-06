@@ -19,6 +19,8 @@ OSV_BATCH_URL = "https://api.osv.dev/v1/querybatch"
 
 @dataclass(slots=True)
 class VulnerabilityScanResult:
+    """Vulnerability scanning output with findings and non-fatal warnings."""
+
     findings: list[VulnerabilityFinding]
     warnings: list[str]
 
@@ -31,6 +33,15 @@ def scan_vulnerabilities(
     cache_dir: str = ".auditpy_cache",
     timeout_seconds: int = 20,
 ) -> VulnerabilityScanResult:
+    """Scan packages against OSV with cache support and deterministic ordering.
+
+    Args:
+        nodes: Resolved package nodes to query against OSV.
+        dependency_paths: Dependency paths keyed by normalized package name.
+        cache_ttl_hours: Cache freshness window in hours.
+        cache_dir: Directory where OSV cache file is stored.
+        timeout_seconds: Network timeout for OSV requests.
+    """
     cache_path = Path(cache_dir) / "osv_cache.json"
     cache_data = _load_cache(cache_path)
 
@@ -74,6 +85,14 @@ def _prepare_cached_and_pending_queries(
     now: datetime,
     ttl: timedelta,
 ) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]], list[str]]:
+    """Split scan work into cache hits and pending OSV queries.
+
+    Args:
+        nodes: Resolved package nodes to evaluate.
+        cache_data: Current in-memory cache payload.
+        now: Current UTC timestamp used for TTL checks.
+        ttl: Allowed cache age threshold.
+    """
     vulnerability_results_by_key: dict[str, list[dict[str, Any]]] = {}
     queries: list[dict[str, Any]] = []
     query_keys: list[str] = []
@@ -104,6 +123,15 @@ def _merge_fetched_results_into_cache(
     *,
     fetched_at_iso: str,
 ) -> None:
+    """Merge fetched OSV results into cache structures for later processing.
+
+    Args:
+        fetched: Raw OSV batch results in query order.
+        query_keys: Cache keys that correspond to `fetched` items.
+        vulnerability_results_by_key: Mutable findings payload keyed by cache key.
+        cache_data: Mutable cache payload that will be persisted.
+        fetched_at_iso: Timestamp recorded for fetched entries.
+    """
     for index, key in enumerate(query_keys):
         vulnerabilities = fetched[index].get("vulns", [])
         vulnerability_results_by_key[key] = vulnerabilities
@@ -114,6 +142,12 @@ def _merge_fetched_results_into_cache(
 
 
 def _query_osv_batch(queries: list[dict[str, Any]], *, timeout_seconds: int) -> list[dict[str, Any]]:
+    """Execute a batched OSV query and return raw result entries.
+
+    Args:
+        queries: OSV query objects for package/version combinations.
+        timeout_seconds: Network timeout for the HTTP request.
+    """
     payload = json.dumps({"queries": queries}).encode("utf-8")
     request = Request(OSV_BATCH_URL, data=payload, headers={"Content-Type": "application/json"}, method="POST")
 
@@ -132,6 +166,13 @@ def _build_findings(
     dependency_paths: dict[str, list[list[str]]],
     cache_results: dict[str, list[dict[str, Any]]],
 ) -> list[VulnerabilityFinding]:
+    """Convert cached/fetched OSV payloads into typed vulnerability findings.
+
+    Args:
+        nodes: Resolved package nodes in the scan.
+        dependency_paths: Dependency paths keyed by normalized package name.
+        cache_results: Cached or fetched OSV result payloads keyed by cache key.
+    """
     findings: list[VulnerabilityFinding] = []
     nodes_by_key = {_cache_key(node.name, node.version): node for node in nodes}
 
@@ -162,6 +203,11 @@ def _build_findings(
 
 
 def _normalize_severity(vuln: dict[str, Any]) -> Severity:
+    """Map OSV severity payloads to internal Severity values.
+
+    Args:
+        vuln: Raw OSV vulnerability payload for one finding.
+    """
     severity_entries = vuln.get("severity") or []
     numeric_score = None
 
@@ -189,10 +235,23 @@ def _normalize_severity(vuln: dict[str, Any]) -> Severity:
 
 
 def _cache_key(name: str, version: str) -> str:
+    """Build a stable cache key for a package/version pair.
+
+    Args:
+        name: Package name.
+        version: Package version.
+    """
     return f"{canonicalize_name(name)}=={version}"
 
 
 def _is_cache_fresh(fetched_at: str | None, now: datetime, ttl: timedelta) -> bool:
+    """Return whether a cached entry timestamp is within the allowed TTL.
+
+    Args:
+        fetched_at: ISO timestamp recorded when cache entry was fetched.
+        now: Current UTC timestamp.
+        ttl: Allowed cache age threshold.
+    """
     if not fetched_at:
         return False
     try:
@@ -206,6 +265,11 @@ def _is_cache_fresh(fetched_at: str | None, now: datetime, ttl: timedelta) -> bo
 
 
 def _load_cache(cache_path: Path) -> dict[str, dict[str, Any]]:
+    """Load vulnerability cache from disk, returning empty cache on read errors.
+
+    Args:
+        cache_path: File path to the JSON cache file.
+    """
     if not cache_path.exists():
         return {}
     try:
@@ -218,6 +282,12 @@ def _load_cache(cache_path: Path) -> dict[str, dict[str, Any]]:
 
 
 def _save_cache(cache_path: Path, cache_data: dict[str, dict[str, Any]]) -> None:
+    """Persist vulnerability cache to disk using deterministic key ordering.
+
+    Args:
+        cache_path: File path to the JSON cache file.
+        cache_data: Cache payload keyed by package/version cache keys.
+    """
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     stable = {key: cache_data[key] for key in sorted(cache_data)}
     cache_path.write_text(json.dumps(stable, indent=2, sort_keys=True), encoding="utf-8")

@@ -29,6 +29,8 @@ NORMALIZATION_MAP = {
 
 @dataclass(slots=True)
 class LicenseScanResult:
+    """License scanning output with findings and non-fatal warnings."""
+
     findings: list[LicenseFinding]
     warnings: list[str]
 
@@ -39,6 +41,13 @@ def evaluate_licenses(
     *,
     policy: str = "no-gpl",
 ) -> LicenseScanResult:
+    """Normalize package licenses and evaluate them against the active policy.
+
+    Args:
+        distributions: Installed package metadata collected from resolution.
+        dependency_paths: Dependency paths keyed by normalized package name.
+        policy: Active license policy name.
+    """
     warnings: list[str] = []
     findings: list[LicenseFinding] = []
 
@@ -73,6 +82,12 @@ def evaluate_licenses(
 
 
 def _license_candidates(declared: Any, classifiers: list[Any]) -> list[str]:
+    """Collect raw license candidate strings from metadata fields.
+
+    Args:
+        declared: Raw license field value from package metadata.
+        classifiers: Classifier entries from package metadata.
+    """
     candidates: list[str] = []
     if isinstance(declared, str) and declared.strip():
         candidates.extend(_split_multi_license_string(declared.strip()))
@@ -90,6 +105,11 @@ def _license_candidates(declared: Any, classifiers: list[Any]) -> list[str]:
 
 
 def _split_multi_license_string(value: str) -> list[str]:
+    """Split a multi-license string into individual candidate expressions.
+
+    Args:
+        value: Raw license expression string.
+    """
     lowered = value.lower().replace("|", " or ").replace("/", " or ")
     parts = [part.strip() for part in lowered.split(" or ") if part.strip()]
     if len(parts) > 1:
@@ -98,6 +118,11 @@ def _split_multi_license_string(value: str) -> list[str]:
 
 
 def _normalize_candidates(candidates: list[str]) -> set[str]:
+    """Map raw license candidates to normalized SPDX identifiers.
+
+    Args:
+        candidates: Raw candidate license strings.
+    """
     normalized: set[str] = set()
     for raw in candidates:
         key = raw.strip().lower()
@@ -108,6 +133,12 @@ def _normalize_candidates(candidates: list[str]) -> set[str]:
 
 
 def _evaluate_policy(policy: str, normalized_spdx: set[str]) -> str:
+    """Evaluate normalized identifiers and return allow/warn/violation outcome.
+
+    Args:
+        policy: Active license policy name.
+        normalized_spdx: Normalized SPDX identifiers for a package.
+    """
     if policy != "no-gpl":
         return "warn"
 
