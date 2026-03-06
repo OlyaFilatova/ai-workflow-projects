@@ -14,6 +14,9 @@ def split_statements(text: str) -> list[ParseEvent]:
     """Split SQL dump text into parse events.
 
     Supports semicolon-terminated SQL and PostgreSQL COPY blocks.
+
+    Args:
+        text: Full dump text to parse.
     """
 
     if "\x00" in text:
@@ -27,36 +30,20 @@ def split_statements(text: str) -> list[ParseEvent]:
     idx = 0
     while idx < len(lines):
         line = lines[idx]
-        if _COPY_HEADER_LINE_RE.match(line.strip()):
-            if sql_chunk:
-                events.extend(_split_sql_chunk("".join(sql_chunk), sql_chunk_start_line))
-                sql_chunk = []
-
-            header_line_number = idx + 1
-            copy_rows: list[str] = []
+        if not _COPY_HEADER_LINE_RE.match(line.strip()):
+            if not sql_chunk:
+                sql_chunk_start_line = idx + 1
+            sql_chunk.append(line)
             idx += 1
-            while idx < len(lines):
-                row = lines[idx].rstrip("\n")
-                if row == "\\.":
-                    break
-                copy_rows.append(row)
-                idx += 1
-
-            if idx >= len(lines):
-                raise ParseError(f"Unterminated COPY block starting at line {header_line_number}")
-
-            statement = Statement(
-                text=line.strip().rstrip(";"), line=header_line_number, dialect="postgres"
-            )
-            events.append(ParseEvent(statement=statement, kind="copy", copy_rows=copy_rows))
-            idx += 1
-            sql_chunk_start_line = idx + 1
             continue
 
-        if not sql_chunk:
-            sql_chunk_start_line = idx + 1
-        sql_chunk.append(line)
-        idx += 1
+        if sql_chunk:
+            events.extend(_split_sql_chunk("".join(sql_chunk), sql_chunk_start_line))
+            sql_chunk = []
+
+        copy_event, idx = _consume_copy_block(lines, idx)
+        events.append(copy_event)
+        sql_chunk_start_line = idx + 1
 
     if sql_chunk:
         events.extend(_split_sql_chunk("".join(sql_chunk), sql_chunk_start_line))
@@ -64,7 +51,41 @@ def split_statements(text: str) -> list[ParseEvent]:
     return events
 
 
+def _consume_copy_block(lines: list[str], header_idx: int) -> tuple[ParseEvent, int]:
+    """Parse COPY data rows until terminator and return event plus next index.
+
+    Args:
+        lines: Full dump text split into lines (with newlines preserved).
+        header_idx: Index of the COPY header line in ``lines``.
+    """
+
+    header_line_number = header_idx + 1
+    header_line = lines[header_idx]
+    copy_rows: list[str] = []
+    idx = header_idx + 1
+    while idx < len(lines):
+        row = lines[idx].rstrip("\n")
+        if row == "\\.":
+            statement = Statement(
+                text=header_line.strip().rstrip(";"),
+                line=header_line_number,
+                dialect="postgres",
+            )
+            return ParseEvent(statement=statement, kind="copy", copy_rows=copy_rows), idx + 1
+        copy_rows.append(row)
+        idx += 1
+
+    raise ParseError(f"Unterminated COPY block starting at line {header_line_number}")
+
+
 def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
+    """Split a non-COPY SQL chunk into statements.
+
+    Args:
+        text: Raw SQL chunk to split on statement boundaries.
+        start_line: Source line number where ``text`` begins.
+    """
+
     events: list[ParseEvent] = []
     buffer: list[str] = []
     in_single = False
@@ -168,8 +189,13 @@ def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
 
     return events
 
-# TODO: Use correct return type
 def _detect_dialect(statement: str) -> str:
+    """Infer source dialect from SQL statement text.
+
+    Args:
+        statement: Statement text to classify.
+    """
+
     upper = statement.upper()
     if "`" in statement or "LOCK TABLES" in upper or "ENGINE=" in upper:
         return "mysql"

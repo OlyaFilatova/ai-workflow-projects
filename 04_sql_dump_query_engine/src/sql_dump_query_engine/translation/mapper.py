@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from ._sql_defs import split_definitions
+
 TYPE_PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"\bTINYINT\s*\(\s*1\s*\)\s+UNSIGNED\b", re.IGNORECASE), "BOOLEAN"),
     (re.compile(r"\bBIGINT\s+UNSIGNED\b", re.IGNORECASE), "UBIGINT"),
@@ -56,7 +58,11 @@ _KNOWN_TYPES = {
 
 
 def normalize_type_tokens(sql: str) -> str:
-    """Apply lightweight type normalization replacements."""
+    """Apply lightweight type normalization replacements.
+
+    Args:
+        sql: SQL statement text to normalize.
+    """
 
     normalized = sql
     for pattern, replacement in TYPE_PATTERNS:
@@ -65,11 +71,21 @@ def normalize_type_tokens(sql: str) -> str:
 
 
 def apply_enum_fallback(sql: str) -> tuple[str, list[str]]:
-    """Map ENUM definitions to TEXT and emit lossy warnings."""
+    """Map ENUM definitions to TEXT and emit lossy warnings.
+
+    Args:
+        sql: SQL statement text to scan for ENUM types.
+    """
 
     warnings: list[str] = []
 
     def replace_enum(match: re.Match[str]) -> str:
+        """Replace a matched ENUM definition with TEXT.
+
+        Args:
+            match: Regex match object for an ENUM type token.
+        """
+
         warnings.append("ENUM mapped to TEXT")
         return "TEXT"
 
@@ -78,7 +94,11 @@ def apply_enum_fallback(sql: str) -> tuple[str, list[str]]:
 
 
 def apply_unknown_type_fallback(sql: str) -> tuple[str, list[str]]:
-    """Replace unsupported CREATE TABLE column types with TEXT."""
+    """Replace unsupported CREATE TABLE column types with TEXT.
+
+    Args:
+        sql: SQL statement text to inspect and rewrite.
+    """
 
     stripped_upper = sql.strip().upper()
     if not stripped_upper.startswith("CREATE TABLE"):
@@ -90,7 +110,7 @@ def apply_unknown_type_fallback(sql: str) -> tuple[str, list[str]]:
         return sql, []
 
     body = sql[open_idx + 1 : close_idx]
-    definitions = _split_definitions(body)
+    definitions = split_definitions(body)
     warnings: list[str] = []
     rewritten: list[str] = []
 
@@ -127,26 +147,3 @@ def apply_unknown_type_fallback(sql: str) -> tuple[str, list[str]]:
     new_body = ",\n".join(segment.strip("\n") for segment in rewritten)
     translated = f"{sql[:open_idx + 1]}\n{new_body}\n{sql[close_idx:]}"
     return translated, warnings
-
-
-def _split_definitions(body: str) -> list[str]:
-    parts: list[str] = []
-    start = 0
-    depth = 0
-    in_single = False
-    in_double = False
-    for idx, char in enumerate(body):
-        if char == "'" and not in_double:
-            in_single = not in_single
-        elif char == '"' and not in_single:
-            in_double = not in_double
-        elif not in_single and not in_double:
-            if char == "(":
-                depth += 1
-            elif char == ")":
-                depth -= 1
-            elif char == "," and depth == 0:
-                parts.append(body[start:idx])
-                start = idx + 1
-    parts.append(body[start:])
-    return parts

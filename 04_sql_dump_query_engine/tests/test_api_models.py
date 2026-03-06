@@ -53,3 +53,20 @@ def test_load_error_contains_statement_context() -> None:
 
     assert exc.value.statement_line == 1
     assert "CREATE TABLE bad" in (exc.value.statement_text or "")
+
+
+def test_load_dump_from_unreadable_existing_path_raises_load_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = SQLDumpQueryEngine()
+
+    monkeypatch.setattr(Path, "exists", lambda self: True)
+
+    def _raise_os_error(self: Path, encoding: str = "utf-8") -> str:
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(Path, "read_text", _raise_os_error)
+
+    with pytest.raises(LoadError) as exc:
+        engine.load_dump("/tmp/unreadable.sql")
+
+    assert "Failed to read dump input from file path." in str(exc.value)
+    assert exc.value.statement_text == "/tmp/unreadable.sql"

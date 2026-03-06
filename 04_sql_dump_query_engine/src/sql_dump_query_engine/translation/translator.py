@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from ..models import ParseEvent, TranslationArtifact, WarningEvent
+from ._sql_defs import split_definitions
 from .mapper import apply_enum_fallback, apply_unknown_type_fallback, normalize_type_tokens
 
 _UNSUPPORTED_PREFIXES = (
@@ -24,7 +25,11 @@ _SKIP_PREFIXES = (
 
 
 def translate_statement(event: ParseEvent) -> TranslationArtifact:
-    """Translate source SQL into DuckDB-compatible SQL."""
+    """Translate source SQL into DuckDB-compatible SQL.
+
+    Args:
+        event: Parsed statement event to translate.
+    """
 
     original = event.statement
     sql = original.text.strip()
@@ -73,6 +78,12 @@ def translate_statement(event: ParseEvent) -> TranslationArtifact:
 
 
 def _translate_mysql(sql: str) -> str:
+    """Apply MySQL-specific statement rewrites.
+
+    Args:
+        sql: Source statement text detected as MySQL dialect.
+    """
+
     translated = sql.replace("`", '"')
 
     # Remove MySQL table options that DuckDB does not support.
@@ -95,6 +106,12 @@ def _translate_mysql(sql: str) -> str:
 
 
 def _rewrite_mysql_create_table_indexes(sql: str) -> str:
+    """Rewrite/strip MySQL CREATE TABLE index definitions.
+
+    Args:
+        sql: Candidate CREATE TABLE statement text.
+    """
+
     stripped_upper = sql.strip().upper()
     if not stripped_upper.startswith("CREATE TABLE"):
         return sql
@@ -105,7 +122,7 @@ def _rewrite_mysql_create_table_indexes(sql: str) -> str:
         return sql
 
     body = sql[open_idx + 1 : close_idx]
-    definitions = _split_definitions(body)
+    definitions = split_definitions(body)
     rewritten: list[str] = []
 
     for definition in definitions:
@@ -131,6 +148,12 @@ def _rewrite_mysql_create_table_indexes(sql: str) -> str:
 
 
 def _rewrite_unique_key_definition(definition: str) -> str:
+    """Normalize MySQL UNIQUE KEY syntax into ANSI-like UNIQUE.
+
+    Args:
+        definition: One CREATE TABLE definition segment.
+    """
+
     match = re.match(
         r'^\s*UNIQUE\s+(?:KEY|INDEX)(?:\s+(?:"[^"]+"|[A-Za-z_][\w$]*))?\s*\((?P<columns>.+)\)\s*(?:USING\s+\w+)?\s*$',
         definition,
@@ -141,30 +164,13 @@ def _rewrite_unique_key_definition(definition: str) -> str:
     return f"UNIQUE ({match.group('columns').strip()})"
 
 
-def _split_definitions(body: str) -> list[str]:
-    parts: list[str] = []
-    start = 0
-    depth = 0
-    in_single = False
-    in_double = False
-    for idx, char in enumerate(body):
-        if char == "'" and not in_double:
-            in_single = not in_single
-        elif char == '"' and not in_single:
-            in_double = not in_double
-        elif not in_single and not in_double:
-            if char == "(":
-                depth += 1
-            elif char == ")":
-                depth -= 1
-            elif char == "," and depth == 0:
-                parts.append(body[start:idx])
-                start = idx + 1
-    parts.append(body[start:])
-    return parts
-
-
 def _translate_postgres(sql: str) -> str:
+    """Apply PostgreSQL-specific statement rewrites.
+
+    Args:
+        sql: Source statement text detected as PostgreSQL dialect.
+    """
+
     translated = sql
     translated = re.sub(r"\bpublic\.", "", translated, flags=re.IGNORECASE)
     translated = re.sub(r"::\s*\w+", "", translated)

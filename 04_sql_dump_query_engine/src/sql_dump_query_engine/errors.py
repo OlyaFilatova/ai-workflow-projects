@@ -13,12 +13,22 @@ class SQLDumpError(Exception):
         statement_line: int | None = None,
         statement_text: str | None = None,
     ) -> None:
+        """Initialize error message with optional statement context.
+
+        Args:
+            message: Human-readable error message.
+            statement_line: Source line number related to the error.
+            statement_text: SQL text related to the error.
+        """
+
         super().__init__(message)
         self.message = message
         self.statement_line = statement_line
         self.statement_text = statement_text
 
     def __str__(self) -> str:
+        """Render the error message including available SQL context."""
+
         parts = [self.message]
         if self.statement_line is not None:
             parts.append(f"line={self.statement_line}")
