@@ -44,6 +44,58 @@ def _extract_table(tag: Tag, index: int) -> TableBlock:
     )
 
 
+def _extract_heading(tag: Tag, index: int) -> HeadingBlock | None:
+    level = int(tag.name[1])
+    text_value = normalize_text(tag.get_text(" ", strip=True))
+    if not text_value:
+        return None
+    return HeadingBlock(
+        block_id=make_block_id("heading", index),
+        index=index,
+        level=level,
+        text=text_value,
+    )
+
+
+def _extract_paragraph(tag: Tag, index: int) -> ParagraphBlock | None:
+    text_value = normalize_text(tag.get_text(" ", strip=True))
+    if not text_value:
+        return None
+    return ParagraphBlock(
+        block_id=make_block_id("paragraph", index),
+        index=index,
+        text=text_value,
+    )
+
+
+def _extract_list(tag: Tag, index: int) -> ListBlock | None:
+    items = [
+        normalize_text(item.get_text(" ", strip=True))
+        for item in tag.find_all("li", recursive=False)
+        if normalize_text(item.get_text(" ", strip=True))
+    ]
+    if not items:
+        return None
+    return ListBlock(
+        block_id=make_block_id("list", index),
+        index=index,
+        ordered=tag.name == "ol",
+        items=items,
+    )
+
+
+def _extract_block(tag: Tag, index: int) -> HeadingBlock | ParagraphBlock | ListBlock | TableBlock | None:
+    if tag.name.startswith("h"):
+        return _extract_heading(tag, index)
+    if tag.name == "p":
+        return _extract_paragraph(tag, index)
+    if tag.name in {"ul", "ol"}:
+        return _extract_list(tag, index)
+    if tag.name == "table":
+        return _extract_table(tag, index)
+    return None
+
+
 def parse_html(text: str) -> Document:
     """Parse HTML text into a normalized document."""
     soup = BeautifulSoup(text, "html.parser")
@@ -61,51 +113,9 @@ def parse_html(text: str) -> Document:
             continue
 
         block_index = len(blocks)
-        if tag.name.startswith("h"):
-            level = int(tag.name[1])
-            text_value = normalize_text(tag.get_text(" ", strip=True))
-            if text_value:
-                blocks.append(
-                    HeadingBlock(
-                        block_id=make_block_id("heading", block_index),
-                        index=block_index,
-                        level=level,
-                        text=text_value,
-                    )
-                )
-            continue
-
-        if tag.name == "p":
-            text_value = normalize_text(tag.get_text(" ", strip=True))
-            if text_value:
-                blocks.append(
-                    ParagraphBlock(
-                        block_id=make_block_id("paragraph", block_index),
-                        index=block_index,
-                        text=text_value,
-                    )
-                )
-            continue
-
-        if tag.name in {"ul", "ol"}:
-            items = [
-                normalize_text(item.get_text(" ", strip=True))
-                for item in tag.find_all("li", recursive=False)
-                if normalize_text(item.get_text(" ", strip=True))
-            ]
-            if items:
-                blocks.append(
-                    ListBlock(
-                        block_id=make_block_id("list", block_index),
-                        index=block_index,
-                        ordered=tag.name == "ol",
-                        items=items,
-                    )
-                )
-            continue
-
-        if tag.name == "table":
-            blocks.append(_extract_table(tag, block_index))
+        block = _extract_block(tag, block_index)
+        if block is not None:
+            blocks.append(block)
 
     return Document(blocks=blocks, source_format="html")
 
