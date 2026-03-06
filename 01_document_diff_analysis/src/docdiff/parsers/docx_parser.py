@@ -121,17 +121,17 @@ def _handle_paragraph(
         _append_heading_block(blocks, level, text)
         return (list_buffer, list_ordered)
 
-    if is_list:
-        if list_ordered is None:
-            list_ordered = ordered
-        if list_ordered != ordered:
-            list_buffer, list_ordered = _flush_list_block(blocks, list_buffer, list_ordered)
-            list_ordered = ordered
-        list_buffer.append(text)
+    if not is_list:
+        list_buffer, list_ordered = _flush_list_block(blocks, list_buffer, list_ordered)
+        _append_paragraph_block(blocks, text)
         return (list_buffer, list_ordered)
 
-    list_buffer, list_ordered = _flush_list_block(blocks, list_buffer, list_ordered)
-    _append_paragraph_block(blocks, text)
+    if list_ordered is None:
+        list_ordered = ordered
+    if list_ordered != ordered:
+        list_buffer, list_ordered = _flush_list_block(blocks, list_buffer, list_ordered)
+        list_ordered = ordered
+    list_buffer.append(text)
     return (list_buffer, list_ordered)
 
 
