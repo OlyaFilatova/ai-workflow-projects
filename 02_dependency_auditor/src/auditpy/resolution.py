@@ -46,22 +46,14 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
     """Resolve dependency graph from requirements file using a temporary virtual environment."""
     req_path = Path(requirements_file)
     if not req_path.exists():
-        return ResolutionOutcome(
-            error=ResolutionFailure(
-                category="runtime",
-                message=f"Requirements file not found: {requirements_file}",
-            )
+        return _runtime_error_outcome(
+            f"Requirements file not found: {requirements_file}",
         )
 
     try:
         parsed_requirements = parse_requirements(str(req_path))
     except Exception as exc:
-        return ResolutionOutcome(
-            error=ResolutionFailure(
-                category="runtime",
-                message=f"Requirements parsing failed: {exc}",
-            )
-        )
+        return _runtime_error_outcome(f"Requirements parsing failed: {exc}")
 
     root_package_names = [requirement.normalized_name for requirement in parsed_requirements.requirements]
 
@@ -74,9 +66,9 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
             _pip_install_requirements(python_bin, req_path)
             installed_distributions = _collect_installed_distributions(python_bin)
     except Exception as exc:
-        return ResolutionOutcome(
+        return _runtime_error_outcome(
+            f"Dependency resolution failed: {exc}",
             warnings=parsed_requirements.warnings,
-            error=ResolutionFailure(category="runtime", message=str(exc)),
         )
 
     edges, adjacency = _build_edges(installed_distributions)
@@ -95,6 +87,13 @@ def resolve_dependencies(requirements_file: str) -> ResolutionOutcome:
         dependency_paths=dependency_paths,
         distributions=installed_distributions,
         warnings=parsed_requirements.warnings,
+    )
+
+
+def _runtime_error_outcome(message: str, *, warnings: list[str] | None = None) -> ResolutionOutcome:
+    return ResolutionOutcome(
+        warnings=list(warnings or []),
+        error=ResolutionFailure(category="runtime", message=message),
     )
 
 
