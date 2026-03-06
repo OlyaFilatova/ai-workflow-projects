@@ -55,7 +55,10 @@ def _load_yaml(text: str) -> dict[str, Any]:
             "YAML parsing requires PyYAML. Install with 'pip install pyyaml'."
         ) from exc
 
-    parsed = yaml.safe_load(text)
+    try:
+        parsed = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise OpenAPILoadError(f"Invalid YAML OpenAPI document: {exc}") from exc
     if not isinstance(parsed, dict):
         raise OpenAPILoadError("YAML OpenAPI root must be an object")
     return parsed
