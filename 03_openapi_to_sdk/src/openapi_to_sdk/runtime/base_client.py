@@ -107,6 +107,18 @@ class BaseClient:
             return response_model.model_validate(payload)
         return response_model(payload)
 
+    def _handle_response(
+        self,
+        response: httpx.Response,
+        response_model: type[Any] | None,
+        error_model: type[Any] | None,
+    ) -> Any:
+        if 200 <= response.status_code < 300:
+            return self._parse_success_response(response, response_model)
+
+        self._raise_for_error(response, error_model)
+        return None
+
     def _raise_for_error(
         self,
         response: httpx.Response,

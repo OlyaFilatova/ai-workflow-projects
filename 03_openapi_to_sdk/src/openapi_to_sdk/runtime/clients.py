@@ -54,11 +54,7 @@ class SyncClient(BaseClient):
         except httpx.HTTPError as exc:
             raise TransportError(str(exc)) from exc
 
-        if 200 <= response.status_code < 300:
-            return self._parse_success_response(response, response_model)
-
-        self._raise_for_error(response, error_model)
-        return None
+        return self._handle_response(response, response_model, error_model)
 
 
 class AsyncClient(BaseClient):
@@ -105,8 +101,4 @@ class AsyncClient(BaseClient):
         except httpx.HTTPError as exc:
             raise TransportError(str(exc)) from exc
 
-        if 200 <= response.status_code < 300:
-            return self._parse_success_response(response, response_model)
-
-        self._raise_for_error(response, error_model)
-        return None
+        return self._handle_response(response, response_model, error_model)
