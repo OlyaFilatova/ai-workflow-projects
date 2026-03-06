@@ -40,6 +40,43 @@ def scan_vulnerabilities(
     now = datetime.now(UTC)
     ttl = timedelta(hours=cache_ttl_hours)
 
+    vulnerability_results_by_key, queries, query_keys = _prepare_cached_and_pending_queries(
+        nodes,
+        cache_data,
+        now=now,
+        ttl=ttl,
+    )
+
+    warnings: list[str] = []
+    if queries:
+        try:
+            fetched = _query_osv_batch(queries, timeout_seconds=timeout_seconds)
+            _merge_fetched_results_into_cache(
+                fetched,
+                query_keys,
+                vulnerability_results_by_key,
+                cache_data,
+                fetched_at_iso=now.isoformat(),
+            )
+            _save_cache(cache_path, cache_data)
+        except (TimeoutError, URLError, HTTPError, OSError, json.JSONDecodeError) as exc:
+            warnings.append(f"OSV query failed; using cached data where available: {exc}")
+            for key in query_keys:
+                vulnerability_results_by_key[key] = cache_data.get(key, {}).get("vulns", [])
+
+    findings = _build_findings(nodes, dependency_paths, vulnerability_results_by_key)
+    findings.sort(key=lambda item: (item.severity.value, item.package.lower(), item.vuln_id))
+
+    return VulnerabilityScanResult(findings=findings, warnings=warnings)
+
+
+def _prepare_cached_and_pending_queries(
+    nodes: list[PackageNode],
+    cache_data: dict[str, dict[str, Any]],
+    *,
+    now: datetime,
+    ttl: timedelta,
+) -> tuple[dict[str, list[dict[str, Any]]], list[dict[str, Any]], list[str]]:
     vulnerability_results_by_key: dict[str, list[dict[str, Any]]] = {}
     queries: list[dict[str, Any]] = []
     query_keys: list[str] = []
@@ -59,27 +96,24 @@ def scan_vulnerabilities(
         )
         query_keys.append(key)
 
-    warnings: list[str] = []
-    if queries:
-        try:
-            fetched = _query_osv_batch(queries, timeout_seconds=timeout_seconds)
-            for index, key in enumerate(query_keys):
-                vulnerabilities = fetched[index].get("vulns", [])
-                vulnerability_results_by_key[key] = vulnerabilities
-                cache_data[key] = {
-                    "fetched_at": now.isoformat(),
-                    "vulns": vulnerabilities,
-                }
-            _save_cache(cache_path, cache_data)
-        except (TimeoutError, URLError, HTTPError, OSError, json.JSONDecodeError) as exc:
-            warnings.append(f"OSV query failed; using cached data where available: {exc}")
-            for key in query_keys:
-                vulnerability_results_by_key[key] = cache_data.get(key, {}).get("vulns", [])
+    return vulnerability_results_by_key, queries, query_keys
 
-    findings = _build_findings(nodes, dependency_paths, vulnerability_results_by_key)
-    findings.sort(key=lambda item: (item.severity.value, item.package.lower(), item.vuln_id))
 
-    return VulnerabilityScanResult(findings=findings, warnings=warnings)
+def _merge_fetched_results_into_cache(
+    fetched: list[dict[str, Any]],
+    query_keys: list[str],
+    vulnerability_results_by_key: dict[str, list[dict[str, Any]]],
+    cache_data: dict[str, dict[str, Any]],
+    *,
+    fetched_at_iso: str,
+) -> None:
+    for index, key in enumerate(query_keys):
+        vulnerabilities = fetched[index].get("vulns", [])
+        vulnerability_results_by_key[key] = vulnerabilities
+        cache_data[key] = {
+            "fetched_at": fetched_at_iso,
+            "vulns": vulnerabilities,
+        }
 
 
 def _query_osv_batch(queries: list[dict[str, Any]], *, timeout_seconds: int) -> list[dict[str, Any]]:
