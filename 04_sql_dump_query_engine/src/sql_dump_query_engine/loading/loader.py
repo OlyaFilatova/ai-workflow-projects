@@ -29,7 +29,7 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
     """Load dump text into DuckDB via parser/translator pipeline."""
 
     stats = LoadStats()
-    warnings = WarningCollector()
+    warning_collector = WarningCollector()
     for event in split_statements(text):
         stats.parsed_statements += 1
 
@@ -38,7 +38,7 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
             continue
 
         artifact = translate_statement(event)
-        _collect_translation_warnings(warnings, artifact)
+        _collect_translation_warnings(warning_collector, artifact)
 
         if artifact.skipped or not artifact.sql:
             stats.skipped_statements += 1
@@ -46,28 +46,31 @@ def load_into_engine(engine: object, text: str) -> LoadStats:
 
         stats.executed_statements += _execute_translated_statement(engine, event, artifact.sql)
 
-    stats.warnings.extend(warnings.events)
+    stats.warnings.extend(warning_collector.events)
     return stats
 
 
-def _collect_translation_warnings(warnings: WarningCollector, artifact: TranslationArtifact) -> None:
-    warnings.events.extend(artifact.warnings)
+def _collect_translation_warnings(
+    warning_collector: WarningCollector,
+    artifact: TranslationArtifact,
+) -> None:
+    warning_collector.events.extend(artifact.warnings)
 
 
 def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -> int:
-    executed_statements = 0
+    executed_statement_count = 0
     try:
         for statement_sql in _batch_insert_statement(sql, batch_size=_INSERT_BATCH_SIZE):
             # TODO: consider using interface for dependency inversion
             engine.execute(statement_sql)
-            executed_statements += 1
+            executed_statement_count += 1
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
             _LOAD_EXECUTION_ERROR_MESSAGE,
             statement_line=event.statement.line,
             statement_text=event.statement.text,
         ) from exc
-    return executed_statements
+    return executed_statement_count
 
 
 def _load_copy_event(engine: object, event: ParseEvent) -> int:
@@ -83,19 +86,19 @@ def _load_copy_event(engine: object, event: ParseEvent) -> int:
     column_sql = ", ".join(header.columns)
     insert_sql = f"INSERT INTO {header.table} ({column_sql}) VALUES ({placeholders})"
 
-    executed = 0
+    executed_batch_count = 0
     try:
         for idx in range(0, len(rows), _COPY_BATCH_SIZE):
             chunk = rows[idx : idx + _COPY_BATCH_SIZE]
             engine.executemany(insert_sql, chunk)
-            executed += 1
+            executed_batch_count += 1
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
             _COPY_LOAD_ERROR_MESSAGE,
             statement_line=event.statement.line,
             statement_text=event.statement.text,
         ) from exc
-    return executed
+    return executed_batch_count
 
 
 def _batch_insert_statement(sql: str, batch_size: int) -> list[str]:
