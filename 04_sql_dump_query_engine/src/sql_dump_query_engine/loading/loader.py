@@ -15,7 +15,14 @@ _INSERT_VALUES_RE = re.compile(
     r"^(INSERT\s+INTO\s+.+?\s+VALUES\s*)(.+?)(;?)$",
     re.IGNORECASE | re.DOTALL,
 )
+_INSERT_BATCH_SIZE = 500
 _COPY_BATCH_SIZE = 500
+_LOAD_EXECUTION_ERROR_MESSAGE = (
+    "Failed to execute translated SQL during dump load. Check unsupported dialect syntax."
+)
+_COPY_LOAD_ERROR_MESSAGE = (
+    "Failed to load PostgreSQL COPY block. Check COPY column order and value types."
+)
 
 
 def load_into_engine(engine: object, text: str) -> LoadStats:
@@ -50,13 +57,13 @@ def _collect_translation_warnings(warnings: WarningCollector, artifact: Translat
 def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -> int:
     executed_statements = 0
     try:
-        for statement_sql in _batch_insert_statement(sql, batch_size=500):
+        for statement_sql in _batch_insert_statement(sql, batch_size=_INSERT_BATCH_SIZE):
             # TODO: consider using interface for dependency inversion
             engine.execute(statement_sql)
             executed_statements += 1
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
-            "Failed to execute translated SQL during dump load. Check unsupported dialect syntax.",
+            _LOAD_EXECUTION_ERROR_MESSAGE,
             statement_line=event.statement.line,
             statement_text=event.statement.text,
         ) from exc
@@ -84,7 +91,7 @@ def _load_copy_event(engine: object, event: ParseEvent) -> int:
             executed += 1
     except Exception as exc:  # pragma: no cover - backend error surface
         raise LoadError(
-            "Failed to load PostgreSQL COPY block. Check COPY column order and value types.",
+            _COPY_LOAD_ERROR_MESSAGE,
             statement_line=event.statement.line,
             statement_text=event.statement.text,
         ) from exc
