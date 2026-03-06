@@ -5,9 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from .engine import Engine
-from .errors import QueryError
+from .errors import LoadError, QueryError
 from .loading.loader import load_into_engine
 from .models import LoadStats, QueryResult
+
+_FILE_READ_ERROR_MESSAGE = "Failed to read dump input from file path."
 
 
 class SQLDumpQueryEngine:
@@ -37,12 +39,18 @@ class SQLDumpQueryEngine:
 def _read_path_or_text(path_or_text: str) -> str:
     source = Path(path_or_text)
     try:
-        if source.exists():
-            return source.read_text(encoding="utf-8")
+        source_exists = source.exists()
     except OSError:
         # Raw SQL text can be long and invalid as a filesystem path.
         return path_or_text
-    return path_or_text
+
+    if not source_exists:
+        return path_or_text
+
+    try:
+        return source.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise LoadError(_FILE_READ_ERROR_MESSAGE, statement_text=path_or_text) from exc
 
 
 def load_dump(path_or_text: str) -> SQLDumpQueryEngine:
