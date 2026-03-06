@@ -39,6 +39,11 @@ _WORD_DIFF_BLOCKS = _TEXTUAL_BLOCKS + (TableBlock,)
 
 
 def _block_signature(block: Block) -> tuple[str, str]:
+    """Build a deterministic comparison signature for a block.
+
+    Args:
+        block: Normalized block to convert into a stable signature.
+    """
     if isinstance(block, HeadingBlock):
         return (block.block_type, f"{block.level}:{block.text}")
     if isinstance(block, ParagraphBlock):
@@ -53,6 +58,11 @@ def _block_signature(block: Block) -> tuple[str, str]:
 
 
 def _block_text(block: Block) -> str:
+    """Extract comparable plain text content from a block.
+
+    Args:
+        block: Normalized block whose human-readable text should be flattened.
+    """
     if isinstance(block, (HeadingBlock, ParagraphBlock)):
         return block.text
     if isinstance(block, ListBlock):
@@ -65,6 +75,12 @@ def _block_text(block: Block) -> str:
 
 
 def _word_diff(before_text: str, after_text: str) -> list[WordDiff]:
+    """Compute token-level diff between two text strings.
+
+    Args:
+        before_text: Baseline text value.
+        after_text: Updated text value.
+    """
     before_words = before_text.split()
     after_words = after_text.split()
     matcher = SequenceMatcher(a=before_words, b=after_words, autojunk=False)
@@ -85,6 +101,13 @@ def _word_diff(before_text: str, after_text: str) -> list[WordDiff]:
 
 
 def _build_modified_item(before: Block, after: Block, granularity: Granularity) -> DiffItem:
+    """Create a modified diff item with optional token-level details.
+
+    Args:
+        before: Block from the baseline document.
+        after: Block from the updated document.
+        granularity: Requested diff granularity level.
+    """
     include_word_diff = granularity in {"block+word", "word"}
     if include_word_diff and (isinstance(before, _WORD_DIFF_BLOCKS) or isinstance(after, _WORD_DIFF_BLOCKS)):
         return DiffItem(
@@ -102,7 +125,13 @@ def diff_documents(
     after: Document,
     granularity: Granularity = "block+word",
 ) -> DiffResult:
-    """Diff two normalized documents using deterministic block alignment."""
+    """Diff two normalized documents using deterministic block alignment.
+
+    Args:
+        before: Baseline normalized document.
+        after: Updated normalized document.
+        granularity: Requested diff detail level.
+    """
     before_signatures = [_block_signature(block) for block in before.blocks]
     after_signatures = [_block_signature(block) for block in after.blocks]
 

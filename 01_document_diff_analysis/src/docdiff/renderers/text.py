@@ -6,6 +6,11 @@ from docdiff.model import DiffItem, DiffResult
 
 
 def _block_summary(item: DiffItem) -> str:
+    """Build a one-line summary for a diff item.
+
+    Args:
+        item: Diff entry containing before/after blocks.
+    """
     block = item.after if item.after is not None else item.before
     if block is None:
         return "<empty>"
@@ -30,9 +35,14 @@ class TextRenderer:
         "modified": "~",
         "equal": "=",
     }
+    """Mapping of diff change types to stable text markers."""
 
     def render(self, result: DiffResult) -> str:
-        """Render a diff result as a deterministic text report."""
+        """Render a diff result as a deterministic text report.
+
+        Args:
+            result: Structured diff output.
+        """
         lines = [f"granularity: {result.granularity}"]
 
         for idx, item in enumerate(result.items):
@@ -48,5 +58,9 @@ class TextRenderer:
 
 
 def render_text(result: DiffResult) -> str:
-    """Convenience function for text rendering."""
+    """Render a diff result to text through the default renderer.
+
+    Args:
+        result: Structured diff output.
+    """
     return TextRenderer().render(result)

@@ -20,6 +20,12 @@ _UNIX_NEWLINE = "\n"
 
 
 def _is_table_start(lines: list[str], index: int) -> bool:
+    """Determine whether a markdown table starts at a given line.
+
+    Args:
+        lines: Source markdown split into lines.
+        index: Candidate header-line index.
+    """
     if index + 1 >= len(lines):
         return False
     header = lines[index]
@@ -28,6 +34,11 @@ def _is_table_start(lines: list[str], index: int) -> bool:
 
 
 def _split_table_row(line: str) -> list[str]:
+    """Split a markdown table row into normalized cells.
+
+    Args:
+        line: Raw markdown table row.
+    """
     trimmed = line.strip().strip("|")
     return [normalize_text(cell) for cell in trimmed.split("|")]
 
@@ -36,6 +47,12 @@ def _flush_paragraph_block(
     paragraph_lines: list[str],
     blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
 ) -> list[str]:
+    """Emit a buffered paragraph block and clear its line buffer.
+
+    Args:
+        paragraph_lines: Buffered paragraph lines.
+        blocks: Accumulated output block list.
+    """
     if not paragraph_lines:
         return []
     paragraph_text = normalize_text(" ".join(paragraph_lines))
@@ -56,6 +73,13 @@ def _append_heading_block(
     level: int,
     text_value: str,
 ) -> None:
+    """Append a normalized heading block to the output sequence.
+
+    Args:
+        blocks: Accumulated output block list.
+        level: Heading level between 1 and 6.
+        text_value: Normalized heading text.
+    """
     index = len(blocks)
     blocks.append(
         HeadingBlock(
@@ -72,6 +96,13 @@ def _consume_table_block(
     start_index: int,
     blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
 ) -> int:
+    """Parse a markdown table and append it as one block.
+
+    Args:
+        lines: Source markdown split into lines.
+        start_index: Table header line index.
+        blocks: Accumulated output block list.
+    """
     header = _split_table_row(lines[start_index])
     next_index = start_index + 2
     rows: list[list[str]] = []
@@ -96,6 +127,14 @@ def _consume_list_block(
     ordered: bool,
     blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
 ) -> int:
+    """Parse a contiguous markdown list and append it as one block.
+
+    Args:
+        lines: Source markdown split into lines.
+        start_index: First list-item line index.
+        ordered: Whether list markers are ordered.
+        blocks: Accumulated output block list.
+    """
     items: list[str] = []
     next_index = start_index
     while next_index < len(lines):
@@ -125,7 +164,11 @@ def _consume_list_block(
 
 
 def parse_markdown(text: str) -> Document:
-    """Parse Markdown text into a normalized document."""
+    """Parse Markdown text into a normalized document.
+
+    Args:
+        text: Raw markdown content.
+    """
     lines = text.replace(_WINDOWS_NEWLINE, _UNIX_NEWLINE).replace(_LEGACY_MAC_NEWLINE, _UNIX_NEWLINE).split(
         _UNIX_NEWLINE
     )
@@ -172,5 +215,9 @@ def parse_markdown(text: str) -> Document:
 
 
 def parse_markdown_file(path: Path) -> Document:
-    """Parse a Markdown file from disk into a normalized document."""
+    """Parse a Markdown file from disk into a normalized document.
+
+    Args:
+        path: Path to a markdown file.
+    """
     return parse_markdown(read_utf8_file(path, "Markdown"))
