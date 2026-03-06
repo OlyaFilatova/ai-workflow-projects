@@ -226,19 +226,26 @@ def _resolve_json_pointer(document: Any, pointer: str) -> Any:
     current = document
     for raw_part in pointer.lstrip("/").split("/"):
         part = raw_part.replace("~1", "/").replace("~0", "~")
-        if isinstance(current, dict) and part in current:
-            current = current[part]
-        elif isinstance(current, list):
-            try:
-                index = int(part)
-            except ValueError as exc:
-                raise OpenAPILoadError(f"Invalid list index in JSON pointer: {part}") from exc
-            if not (0 <= index < len(current)):
-                raise OpenAPILoadError(f"List index out of range in JSON pointer: {part}")
-            current = current[index]
-        else:
-            raise OpenAPILoadError(f"Unable to resolve JSON pointer segment '{part}' in '{pointer}'")
+        current = _resolve_pointer_segment(current, part, pointer)
     return current
+
+
+def _resolve_pointer_segment(current: Any, part: str, pointer: str) -> Any:
+    if isinstance(current, dict):
+        if part not in current:
+            raise OpenAPILoadError(f"Unable to resolve JSON pointer segment '{part}' in '{pointer}'")
+        return current[part]
+
+    if not isinstance(current, list):
+        raise OpenAPILoadError(f"Unable to resolve JSON pointer segment '{part}' in '{pointer}'")
+
+    try:
+        index = int(part)
+    except ValueError as exc:
+        raise OpenAPILoadError(f"Invalid list index in JSON pointer: {part}") from exc
+    if not (0 <= index < len(current)):
+        raise OpenAPILoadError(f"List index out of range in JSON pointer: {part}")
+    return current[index]
 
 
 def _sorted_dicts(value: Any) -> Any:
