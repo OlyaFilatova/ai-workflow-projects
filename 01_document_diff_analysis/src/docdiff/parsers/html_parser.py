@@ -8,7 +8,8 @@ from bs4 import BeautifulSoup, Tag
 
 from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
-from .common import make_block_id, normalize_text, read_utf8_file
+from .common import make_block_id, normalize_text
+from .io import read_utf8_file
 
 _BLOCK_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6", "p", "ul", "ol", "table"}
 _SKIP_ANCESTOR_TAGS = {"table", "ul", "ol"}

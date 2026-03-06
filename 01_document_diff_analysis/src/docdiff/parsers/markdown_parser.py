@@ -7,7 +7,8 @@ from pathlib import Path
 
 from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
-from .common import make_block_id, normalize_text, read_utf8_file
+from .common import make_block_id, normalize_text
+from .io import read_utf8_file
 
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
 _UNORDERED_ITEM_RE = re.compile(r"^\s*[-*+]\s+(.+)$")
