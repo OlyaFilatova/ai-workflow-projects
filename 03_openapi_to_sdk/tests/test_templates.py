@@ -84,6 +84,15 @@ def test_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
     assert _normalize(generated) == _normalize(golden)
 
 
+def test_client_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
+    render_sdk(_sample_ir(), tmp_path)
+
+    generated = (tmp_path / "demo_api" / "client.py").read_text(encoding="utf-8")
+    golden = (Path(__file__).parent / "golden" / "client_snapshot.py").read_text(encoding="utf-8")
+
+    assert _normalize(generated) == _normalize(golden)
+
+
 def test_generated_package_import_smoke_when_pydantic_available(tmp_path: Path) -> None:
     if importlib.util.find_spec("pydantic") is None:
         pytest.skip("pydantic not installed in this environment")
