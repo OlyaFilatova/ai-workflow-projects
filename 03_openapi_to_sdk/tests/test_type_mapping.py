@@ -6,6 +6,7 @@ from openapi_to_sdk.ir import UnsupportedSchemaError, build_api_ir
 
 
 def test_type_mapping_required_optional_nullable_and_formats() -> None:
+    """Test type mapping required optional nullable and formats."""
     doc = {
         "openapi": "3.1.0",
         "info": {"title": "Demo", "version": "1.0.0"},
@@ -40,6 +41,7 @@ def test_type_mapping_required_optional_nullable_and_formats() -> None:
 
 
 def test_type_mapping_enum_and_additional_properties() -> None:
+    """Test type mapping enum and additional properties."""
     doc = {
         "openapi": "3.0.3",
         "info": {"title": "Demo", "version": "1.0.0"},
@@ -63,6 +65,7 @@ def test_type_mapping_enum_and_additional_properties() -> None:
 
 
 def test_operation_and_schema_name_collisions_are_deterministic() -> None:
+    """Test operation and schema name collisions are deterministic."""
     doc = {
         "openapi": "3.1.0",
         "info": {"title": "Naming", "version": "1.0.0"},
@@ -87,6 +90,7 @@ def test_operation_and_schema_name_collisions_are_deterministic() -> None:
 
 
 def test_allof_merge_and_simple_oneof_union() -> None:
+    """Test allof merge and simple oneof union."""
     doc = {
         "openapi": "3.1.0",
         "info": {"title": "Compose", "version": "1.0.0"},
@@ -126,6 +130,7 @@ def test_allof_merge_and_simple_oneof_union() -> None:
 
 
 def test_unsupported_discriminator_composition_fails() -> None:
+    """Test unsupported discriminator composition fails."""
     doc = {
         "openapi": "3.1.0",
         "info": {"title": "Fail", "version": "1.0.0"},

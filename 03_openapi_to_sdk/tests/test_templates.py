@@ -12,6 +12,7 @@ from openapi_to_sdk.ir.models import ApiIR, FieldIR, SchemaIR
 
 
 def _sample_ir() -> ApiIR:
+    """Run sample ir."""
     user_schema = SchemaIR(
         name="User",
         python_name="User",
@@ -32,6 +33,11 @@ def _sample_ir() -> ApiIR:
 
 
 def _normalize(source: str) -> str:
+    """Run normalize.
+
+    Args:
+        source: Argument value.
+    """
     lines = [line.rstrip() for line in source.splitlines()]
     compact: list[str] = []
     previous_blank = False
@@ -45,6 +51,11 @@ def _normalize(source: str) -> str:
 
 
 def test_template_render_generates_valid_python(tmp_path: Path) -> None:
+    """Test template render generates valid python.
+
+    Args:
+        tmp_path: Argument value.
+    """
     render_sdk(_sample_ir(), tmp_path)
 
     models_file = tmp_path / "demo_api" / "models.py"
@@ -61,6 +72,11 @@ def test_template_render_generates_valid_python(tmp_path: Path) -> None:
 
 
 def test_template_render_is_deterministic(tmp_path: Path) -> None:
+    """Test template render is deterministic.
+
+    Args:
+        tmp_path: Argument value.
+    """
     ir = _sample_ir()
 
     out_a = tmp_path / "a"
@@ -76,6 +92,11 @@ def test_template_render_is_deterministic(tmp_path: Path) -> None:
 
 
 def test_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
+    """Test template render matches golden snapshot.
+
+    Args:
+        tmp_path: Argument value.
+    """
     render_sdk(_sample_ir(), tmp_path)
 
     generated = (tmp_path / "demo_api" / "models.py").read_text(encoding="utf-8")
@@ -85,6 +106,11 @@ def test_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
 
 
 def test_client_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
+    """Test client template render matches golden snapshot.
+
+    Args:
+        tmp_path: Argument value.
+    """
     render_sdk(_sample_ir(), tmp_path)
 
     generated = (tmp_path / "demo_api" / "client.py").read_text(encoding="utf-8")
@@ -94,6 +120,11 @@ def test_client_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
 
 
 def test_generated_package_import_smoke_when_pydantic_available(tmp_path: Path) -> None:
+    """Test generated package import smoke when pydantic available.
+
+    Args:
+        tmp_path: Argument value.
+    """
     if importlib.util.find_spec("pydantic") is None:
         pytest.skip("pydantic not installed in this environment")
 

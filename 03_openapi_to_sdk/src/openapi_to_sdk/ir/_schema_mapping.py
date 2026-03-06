@@ -17,6 +17,12 @@ from openapi_to_sdk.ir.models import FieldIR, SchemaIR
 
 
 def map_schema_type(schema: dict[str, Any], *, ctx: MappingContext) -> str:
+    """Map an OpenAPI schema object to a Python type hint string.
+
+    Args:
+        schema: OpenAPI schema object.
+        ctx: Shared mapping context.
+    """
     if "$ref" in schema:
         return ref_to_type(str(schema["$ref"]), ctx)
 
@@ -89,6 +95,13 @@ def map_schema_type(schema: dict[str, Any], *, ctx: MappingContext) -> str:
 
 
 def build_schema_ir(name: str, schema: dict[str, Any], ctx: MappingContext) -> SchemaIR:
+    """Build one schema IR node from an OpenAPI schema definition.
+
+    Args:
+        name: Normalized Python schema name.
+        schema: OpenAPI schema object.
+        ctx: Shared mapping context.
+    """
     if "allOf" in schema:
         schema = merge_all_of(schema, ctx)
 
@@ -158,6 +171,12 @@ def build_schema_ir(name: str, schema: dict[str, Any], ctx: MappingContext) -> S
 
 
 def merge_all_of(schema: dict[str, Any], ctx: MappingContext) -> dict[str, Any]:
+    """Merge a supported OpenAPI `allOf` composition into one schema object.
+
+    Args:
+        schema: Schema object containing `allOf`.
+        ctx: Shared mapping context.
+    """
     blocks = schema.get("allOf")
     if not isinstance(blocks, list) or not blocks:
         raise UnsupportedSchemaError("allOf must be a non-empty list")
@@ -197,6 +216,12 @@ def merge_all_of(schema: dict[str, Any], ctx: MappingContext) -> dict[str, Any]:
 
 
 def ref_to_type(ref: str, ctx: MappingContext) -> str:
+    """Map a local schema `$ref` to the normalized Python type name.
+
+    Args:
+        ref: JSON pointer-style local reference.
+        ctx: Shared mapping context.
+    """
     if not ref.startswith("#/"):
         raise UnsupportedSchemaError(f"Only local refs are supported in MVP type mapping: {ref}")
 
@@ -205,6 +230,11 @@ def ref_to_type(ref: str, ctx: MappingContext) -> str:
 
 
 def schema_type(schema: dict[str, Any]) -> str | None:
+    """Extract the effective OpenAPI type from a schema object.
+
+    Args:
+        schema: OpenAPI schema object.
+    """
     value = schema.get("type")
     if isinstance(value, str):
         return value
@@ -216,6 +246,12 @@ def schema_type(schema: dict[str, Any]) -> str | None:
 
 
 def is_nullable(schema: dict[str, Any], ctx: MappingContext) -> bool:
+    """Determine whether a schema allows null values.
+
+    Args:
+        schema: OpenAPI schema object.
+        ctx: Shared mapping context.
+    """
     if bool(schema.get("nullable")) and ctx.openapi_version.startswith("3.0"):
         return True
 
@@ -227,6 +263,13 @@ def is_nullable(schema: dict[str, Any], ctx: MappingContext) -> bool:
 
 
 def apply_nullable(type_hint: str, schema: dict[str, Any], ctx: MappingContext) -> str:
+    """Apply nullability to a type hint when schema rules require it.
+
+    Args:
+        type_hint: Base Python type hint string.
+        schema: OpenAPI schema object.
+        ctx: Shared mapping context.
+    """
     if is_nullable(schema, ctx) and "None" not in type_hint:
         return f"{type_hint} | None"
     return type_hint

@@ -6,6 +6,7 @@ from openapi_to_sdk.runtime.errors import ApiError
 
 
 def test_import_smoke() -> None:
+    """Test import smoke."""
     assert callable(build_parser)
     assert callable(render_sdk)
     assert callable(load_openapi_document)

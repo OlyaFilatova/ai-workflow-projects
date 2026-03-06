@@ -7,6 +7,11 @@ from openapi_to_sdk.cli.main import main
 
 
 def _write_spec(path: Path) -> None:
+    """Run write spec.
+
+    Args:
+        path: Argument value.
+    """
     path.write_text(
         json.dumps(
             {
@@ -55,6 +60,11 @@ def _write_spec(path: Path) -> None:
 
 
 def _read_tree(root: Path) -> dict[str, str]:
+    """Run read tree.
+
+    Args:
+        root: Argument value.
+    """
     files: dict[str, str] = {}
     for item in sorted(root.rglob("*")):
         if item.is_file():
@@ -63,6 +73,12 @@ def _read_tree(root: Path) -> dict[str, str]:
 
 
 def test_cli_generate_smoke(tmp_path: Path, capsys) -> None:
+    """Test cli generate smoke.
+
+    Args:
+        tmp_path: Argument value.
+        capsys: Argument value.
+    """
     spec = tmp_path / "spec.json"
     out = tmp_path / "out"
     _write_spec(spec)
@@ -77,6 +93,12 @@ def test_cli_generate_smoke(tmp_path: Path, capsys) -> None:
 
 
 def test_cli_reports_invalid_spec(tmp_path: Path, capsys) -> None:
+    """Test cli reports invalid spec.
+
+    Args:
+        tmp_path: Argument value.
+        capsys: Argument value.
+    """
     out = tmp_path / "out"
 
     exit_code = main(["generate", "--spec", str(tmp_path / "missing.json"), "--output", str(out)])
@@ -87,6 +109,12 @@ def test_cli_reports_invalid_spec(tmp_path: Path, capsys) -> None:
 
 
 def test_cli_overwrite_behavior(tmp_path: Path, capsys) -> None:
+    """Test cli overwrite behavior.
+
+    Args:
+        tmp_path: Argument value.
+        capsys: Argument value.
+    """
     spec = tmp_path / "spec.json"
     out = tmp_path / "out"
     _write_spec(spec)
@@ -104,6 +132,11 @@ def test_cli_overwrite_behavior(tmp_path: Path, capsys) -> None:
 
 
 def test_generation_is_idempotent(tmp_path: Path) -> None:
+    """Test generation is idempotent.
+
+    Args:
+        tmp_path: Argument value.
+    """
     spec = tmp_path / "spec.json"
     out_a = tmp_path / "out_a"
     out_b = tmp_path / "out_b"

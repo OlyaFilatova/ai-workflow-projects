@@ -14,15 +14,30 @@ class UnsupportedSchemaError(ValueError):
 
 @dataclass(slots=True)
 class MappingContext:
+    """Shared context used during OpenAPI-to-IR mapping.
+
+    Attributes:
+        openapi_version: OpenAPI version string from the source document.
+        schema_name_map: Mapping from raw schema names to generated Python names.
+    """
+
     openapi_version: str
     schema_name_map: dict[str, str]
 
 
 class NameRegistry:
+    """Track and allocate unique Python identifiers."""
+
     def __init__(self) -> None:
+        """Initialize an empty identifier registry."""
         self._used: set[str] = set()
 
     def unique(self, base: str) -> str:
+        """Return a unique identifier derived from `base`.
+
+        Args:
+            base: Preferred identifier base name.
+        """
         clean = base or "item"
         if clean not in self._used:
             self._used.add(clean)
@@ -38,6 +53,11 @@ class NameRegistry:
 
 
 def to_snake_case(raw: str) -> str:
+    """Convert arbitrary text into a safe snake_case Python identifier.
+
+    Args:
+        raw: Raw source name.
+    """
     base = re.sub(r"[^A-Za-z0-9]+", "_", raw).strip("_")
     if not base:
         return "item"
@@ -51,6 +71,11 @@ def to_snake_case(raw: str) -> str:
 
 
 def to_pascal_case(raw: str) -> str:
+    """Convert arbitrary text into a PascalCase Python type name.
+
+    Args:
+        raw: Raw source name.
+    """
     tokens = [token for token in re.split(r"[^A-Za-z0-9]+", raw) if token]
     if not tokens:
         return "Model"
@@ -61,8 +86,18 @@ def to_pascal_case(raw: str) -> str:
 
 
 def as_dict(value: Any) -> dict[str, Any]:
+    """Return `value` when it is a dict, otherwise return an empty dict.
+
+    Args:
+        value: Candidate mapping value.
+    """
     return value if isinstance(value, dict) else {}
 
 
 def as_list(value: Any) -> list[Any]:
+    """Return `value` when it is a list, otherwise return an empty list.
+
+    Args:
+        value: Candidate list value.
+    """
     return value if isinstance(value, list) else []

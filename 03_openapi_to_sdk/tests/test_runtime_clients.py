@@ -13,26 +13,54 @@ from openapi_to_sdk.runtime.errors import BadRequestError, NotFoundError
 
 @dataclass(slots=True)
 class ParsedModel:
+    """Represent ParsedModel.
+
+    Attributes:
+        name: Attribute value.
+    """
     name: str
 
     @classmethod
     def model_validate(cls, payload: dict[str, str]) -> ParsedModel:
+        """Run model validate.
+
+        Args:
+            cls: Argument value.
+            payload: Argument value.
+        """
         return cls(name=payload["name"])
 
 
 @dataclass(slots=True)
 class ParsedError:
+    """Represent ParsedError.
+
+    Attributes:
+        code: Attribute value.
+    """
     code: str
 
     @classmethod
     def model_validate(cls, payload: dict[str, str]) -> ParsedError:
+        """Run model validate.
+
+        Args:
+            cls: Argument value.
+            payload: Argument value.
+        """
         return cls(code=payload["code"])
 
 
 def test_sync_request_construction_and_auth_injection() -> None:
+    """Test sync request construction and auth injection."""
     captured: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Run handler.
+
+        Args:
+            request: Argument value.
+        """
         captured["url"] = str(request.url)
         captured["headers"] = dict(request.headers)
         captured["body"] = request.content.decode("utf-8")
@@ -63,9 +91,15 @@ def test_sync_request_construction_and_auth_injection() -> None:
 
 
 def test_sync_auth_override_beats_default() -> None:
+    """Test sync auth override beats default."""
     captured: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
+        """Run handler.
+
+        Args:
+            request: Argument value.
+        """
         captured["headers"] = dict(request.headers)
         return httpx.Response(200, json={})
 
@@ -89,7 +123,13 @@ def test_sync_auth_override_beats_default() -> None:
 
 
 def test_response_parsing_and_204_handling() -> None:
+    """Test response parsing and 204 handling."""
     def handler(request: httpx.Request) -> httpx.Response:
+        """Run handler.
+
+        Args:
+            request: Argument value.
+        """
         if request.url.path.endswith("/one"):
             return httpx.Response(200, json={"name": "one"})
         return httpx.Response(204)
@@ -106,7 +146,13 @@ def test_response_parsing_and_204_handling() -> None:
 
 
 def test_error_mapping_and_parsed_error_payload() -> None:
+    """Test error mapping and parsed error payload."""
     def handler(request: httpx.Request) -> httpx.Response:
+        """Run handler.
+
+        Args:
+            request: Argument value.
+        """
         if request.url.path.endswith("/missing"):
             return httpx.Response(404, json={"code": "not_found"})
         return httpx.Response(400, json={"code": "bad_request"})
@@ -130,10 +176,17 @@ def test_error_mapping_and_parsed_error_payload() -> None:
 
 
 def test_async_request_construction_and_response_parse() -> None:
+    """Test async request construction and response parse."""
     captured: dict[str, object] = {}
 
     async def run() -> ParsedModel:
+        """Run run."""
         def handler(request: httpx.Request) -> httpx.Response:
+            """Run handler.
+
+            Args:
+                request: Argument value.
+            """
             captured["url"] = str(request.url)
             return httpx.Response(200, json={"name": "async"})
 

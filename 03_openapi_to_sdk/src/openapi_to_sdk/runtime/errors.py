@@ -25,6 +25,7 @@ class ApiError(Exception):
     parsed_error: Any | None = None
 
     def __str__(self) -> str:
+        """Return a compact string representation for logging/display."""
         return f"{self.status_code}: {self.message}"
 
 

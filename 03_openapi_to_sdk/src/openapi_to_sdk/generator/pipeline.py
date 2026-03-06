@@ -20,6 +20,13 @@ def generate_sdk_package(
     output_dir: Path,
     overwrite: bool = False,
 ) -> Path:
+    """Generate an SDK package from an OpenAPI spec path.
+
+    Args:
+        spec_path: Path to the input OpenAPI document.
+        output_dir: Directory where generated package files are written.
+        overwrite: Whether to replace an existing non-empty output directory.
+    """
     spec = spec_path.expanduser().resolve()
     out = output_dir.expanduser().resolve()
 

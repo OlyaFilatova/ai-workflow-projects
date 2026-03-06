@@ -10,6 +10,7 @@ from openapi_to_sdk.generator import GenerationPipelineError, generate_sdk_packa
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser for supported subcommands."""
     parser = argparse.ArgumentParser(prog="openapi-to-sdk")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -25,6 +26,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the CLI entrypoint.
+
+    Args:
+        argv: Optional command-line arguments. When `None`, uses `sys.argv`.
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
 

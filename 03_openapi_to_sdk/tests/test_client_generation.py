@@ -7,6 +7,11 @@ from openapi_to_sdk.ir.models import ApiIR, OperationIR, ResponseIR, SchemaIR
 
 
 def test_generated_client_contains_operation_methods(tmp_path: Path) -> None:
+    """Test generated client contains operation methods.
+
+    Args:
+        tmp_path: Argument value.
+    """
     ir = ApiIR(
         title="Pets",
         version="1.0.0",

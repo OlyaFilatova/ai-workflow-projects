@@ -29,6 +29,11 @@ DEFAULT_OPERATION_ID_TEMPLATE = "{method}_{path}"
 
 
 def build_auth_schemes(components: dict[str, Any]) -> list[AuthSchemeIR]:
+    """Build auth-scheme IR objects from OpenAPI components.
+
+    Args:
+        components: OpenAPI `components` object.
+    """
     raw_schemes = as_dict(components.get("securitySchemes"))
     auth_schemes: list[AuthSchemeIR] = []
     name_registry = NameRegistry()
@@ -65,6 +70,13 @@ def build_operations(
     ctx: MappingContext,
     operation_registry: NameRegistry,
 ) -> list[OperationIR]:
+    """Build operation IR objects from OpenAPI paths.
+
+    Args:
+        document: Fully resolved OpenAPI document.
+        ctx: Shared mapping context.
+        operation_registry: Registry for unique operation method names.
+    """
     paths = as_dict(document.get("paths"))
     operations: list[OperationIR] = []
     global_security = document.get("security")
@@ -105,6 +117,12 @@ def build_operations(
 
 
 def build_parameters(raw_parameters: list[Any], ctx: MappingContext) -> list[ParameterIR]:
+    """Build parameter IR objects from OpenAPI parameter definitions.
+
+    Args:
+        raw_parameters: Merged list of path-level and operation-level parameters.
+        ctx: Shared mapping context.
+    """
     params: list[ParameterIR] = []
     name_registry = NameRegistry()
 
@@ -132,6 +150,12 @@ def build_parameters(raw_parameters: list[Any], ctx: MappingContext) -> list[Par
 
 
 def build_request_body(raw_request_body: Any, ctx: MappingContext) -> RequestBodyIR | None:
+    """Build request-body IR for JSON request bodies.
+
+    Args:
+        raw_request_body: OpenAPI requestBody object.
+        ctx: Shared mapping context.
+    """
     if not isinstance(raw_request_body, dict):
         return None
     content = as_dict(raw_request_body.get("content"))
@@ -148,6 +172,12 @@ def build_request_body(raw_request_body: Any, ctx: MappingContext) -> RequestBod
 
 
 def build_responses(raw_responses: Any, ctx: MappingContext) -> list[ResponseIR]:
+    """Build response IR objects from OpenAPI responses.
+
+    Args:
+        raw_responses: OpenAPI responses object.
+        ctx: Shared mapping context.
+    """
     response_map = as_dict(raw_responses)
     response_models: list[ResponseIR] = []
 

@@ -6,6 +6,7 @@ from openapi_to_sdk.ir import build_api_ir
 
 
 def test_build_api_ir_performance_smoke() -> None:
+    """Test build api ir performance smoke."""
     paths: dict[str, object] = {}
     for idx in range(250):
         paths[f"/items/{idx}"] = {

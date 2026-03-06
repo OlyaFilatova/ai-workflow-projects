@@ -9,6 +9,11 @@ from openapi_to_sdk.parser import OpenAPILoadError, load_openapi_document
 
 
 def test_loader_rejects_remote_ref(tmp_path: Path) -> None:
+    """Test loader rejects remote ref.
+
+    Args:
+        tmp_path: Argument value.
+    """
     spec = tmp_path / "spec.json"
     spec.write_text(
         json.dumps(
@@ -31,6 +36,11 @@ def test_loader_rejects_remote_ref(tmp_path: Path) -> None:
 
 
 def test_loader_errors_on_missing_ref_target_file(tmp_path: Path) -> None:
+    """Test loader errors on missing ref target file.
+
+    Args:
+        tmp_path: Argument value.
+    """
     spec = tmp_path / "spec.json"
     spec.write_text(
         json.dumps(
@@ -53,6 +63,11 @@ def test_loader_errors_on_missing_ref_target_file(tmp_path: Path) -> None:
 
 
 def test_loader_errors_on_invalid_pointer(tmp_path: Path) -> None:
+    """Test loader errors on invalid pointer.
+
+    Args:
+        tmp_path: Argument value.
+    """
     spec = tmp_path / "spec.json"
     spec.write_text(
         json.dumps(
@@ -75,6 +90,11 @@ def test_loader_errors_on_invalid_pointer(tmp_path: Path) -> None:
 
 
 def test_loader_errors_on_invalid_yaml(tmp_path: Path) -> None:
+    """Test loader errors on invalid yaml.
+
+    Args:
+        tmp_path: Argument value.
+    """
     spec = tmp_path / "bad.yaml"
     spec.write_text(
         """

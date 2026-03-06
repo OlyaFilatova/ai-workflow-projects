@@ -12,6 +12,15 @@ from openapi_to_sdk.ir.models import ApiIR, FieldIR, OperationIR, SchemaIR
 
 @dataclass(slots=True)
 class _TemplateField:
+    """Template-ready representation of one model field.
+
+    Attributes:
+        name: Python field name used in generated code.
+        type_hint: Python type hint string for the field.
+        required: Whether the field is required.
+        alias: Optional original API field name when different from `name`.
+    """
+
     name: str
     type_hint: str
     required: bool
@@ -20,6 +29,15 @@ class _TemplateField:
 
 @dataclass(slots=True)
 class _TemplateSchema:
+    """Template-ready representation of one schema.
+
+    Attributes:
+        name: Public schema class/type name.
+        kind: Schema kind (`model`, `enum`, or `alias`).
+        type_hint: Type hint expression used for aliases/enums.
+        fields: Normalized model fields for `model` schemas.
+    """
+
     name: str
     kind: str
     type_hint: str
@@ -28,6 +46,17 @@ class _TemplateSchema:
 
 @dataclass(slots=True)
 class _TemplateOperation:
+    """Template-ready representation of one API operation.
+
+    Attributes:
+        method_name: Generated Python method name.
+        http_method: HTTP method in uppercase.
+        path: Request path template.
+        return_type: Return type hint for the generated method.
+        response_model: Optional response model symbol used for parsing.
+        error_model: Optional error model symbol used for parsing.
+    """
+
     method_name: str
     http_method: str
     path: str
@@ -66,6 +95,7 @@ def render_sdk(ir: ApiIR, output_dir: Path) -> None:
 
 
 def _build_environment() -> Environment:
+    """Build the Jinja2 rendering environment for SDK templates."""
     template_dir = Path(__file__).resolve().parents[1] / "templates"
     env = Environment(
         loader=FileSystemLoader(template_dir),
@@ -79,6 +109,11 @@ def _build_environment() -> Environment:
 
 
 def _schema_to_template(schema: SchemaIR) -> _TemplateSchema:
+    """Convert one schema IR node to a template-facing schema object.
+
+    Args:
+        schema: Source schema IR model.
+    """
     fields = [_field_to_template(field) for field in schema.fields]
     return _TemplateSchema(
         name=schema.name,
@@ -89,6 +124,11 @@ def _schema_to_template(schema: SchemaIR) -> _TemplateSchema:
 
 
 def _field_to_template(field: FieldIR) -> _TemplateField:
+    """Convert one field IR node to a template-facing field object.
+
+    Args:
+        field: Source field IR model.
+    """
     alias = field.name if field.python_name != field.name else None
     return _TemplateField(
         name=field.python_name,
@@ -99,6 +139,11 @@ def _field_to_template(field: FieldIR) -> _TemplateField:
 
 
 def _render_field_declaration(field: _TemplateField) -> str:
+    """Render a single model field declaration line for templates.
+
+    Args:
+        field: Template-facing field model.
+    """
     declaration = f"    {field.name}: {field.type_hint}"
     if field.alias and field.required:
         declaration += f' = Field(alias="{field.alias}")'
@@ -110,6 +155,12 @@ def _render_field_declaration(field: _TemplateField) -> str:
 
 
 def _operation_to_template(operation: OperationIR, schema_names: set[str]) -> _TemplateOperation:
+    """Convert one operation IR node to a template-facing operation object.
+
+    Args:
+        operation: Source operation IR model.
+        schema_names: Set of generated schema names usable as model symbols.
+    """
     success_response = next(
         (
             response
@@ -144,6 +195,11 @@ def _operation_to_template(operation: OperationIR, schema_names: set[str]) -> _T
 
 
 def _collect_type_imports(schemas: list[_TemplateSchema]) -> tuple[list[str], list[str]]:
+    """Collect typing and stdlib imports required by rendered model hints.
+
+    Args:
+        schemas: Template-facing schema list.
+    """
     hints: list[str] = []
     for schema in schemas:
         hints.append(schema.type_hint)
@@ -167,6 +223,11 @@ def _collect_type_imports(schemas: list[_TemplateSchema]) -> tuple[list[str], li
 
 
 def _package_name(title: str) -> str:
+    """Normalize an API title into a valid Python package name.
+
+    Args:
+        title: Raw API title from the OpenAPI document.
+    """
     cleaned = "".join(ch if ch.isalnum() else "_" for ch in title.lower()).strip("_")
     collapsed = "_".join(segment for segment in cleaned.split("_") if segment)
     return collapsed or "generated_sdk"

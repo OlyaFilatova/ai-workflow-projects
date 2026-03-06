@@ -20,6 +20,11 @@ _MappingContext = MappingContext
 
 
 def build_api_ir(document: dict[str, Any]) -> ApiIR:
+    """Build the full API IR from a resolved OpenAPI document.
+
+    Args:
+        document: OpenAPI document object with resolved references.
+    """
     version = str(document.get("openapi", "3.1.0"))
     ctx = MappingContext(openapi_version=version, schema_name_map={})
 

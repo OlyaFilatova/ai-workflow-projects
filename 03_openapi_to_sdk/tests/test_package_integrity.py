@@ -7,6 +7,11 @@ from openapi_to_sdk.ir.models import ApiIR, SchemaIR
 
 
 def test_generated_package_integrity(tmp_path: Path) -> None:
+    """Test generated package integrity.
+
+    Args:
+        tmp_path: Argument value.
+    """
     ir = ApiIR(
         title="Integrity API",
         version="1.0.0",
