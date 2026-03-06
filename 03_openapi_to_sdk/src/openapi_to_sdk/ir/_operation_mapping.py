@@ -20,6 +20,13 @@ from openapi_to_sdk.ir.models import (
     ResponseIR,
 )
 
+SUPPORTED_HTTP_METHODS = ["get", "post", "put", "patch", "delete", "options", "head"]
+JSON_MEDIA_TYPE = "application/json"
+DEFAULT_PARAM_NAME = "param"
+DEFAULT_PARAM_LOCATION = "query"
+DEFAULT_APIKEY_LOCATION = "header"
+DEFAULT_OPERATION_ID_TEMPLATE = "{method}_{path}"
+
 
 def build_auth_schemes(components: dict[str, Any]) -> list[AuthSchemeIR]:
     schemes = as_dict(components.get("securitySchemes"))
@@ -37,7 +44,7 @@ def build_auth_schemes(components: dict[str, Any]) -> list[AuthSchemeIR]:
                     name=raw_name,
                     python_name=python_name,
                     kind="apiKey",
-                    location=str(source.get("in", "header")),
+                    location=str(source.get("in", DEFAULT_APIKEY_LOCATION)),
                 )
             )
         elif scheme_type == "http" and str(source.get("scheme", "")).lower() == "bearer":
@@ -66,11 +73,12 @@ def build_operations(
         path_item = as_dict(paths[path])
         path_level_params = as_list(path_item.get("parameters"))
 
-        for method in ["get", "post", "put", "patch", "delete", "options", "head"]:
+        for method in SUPPORTED_HTTP_METHODS:
             if method not in path_item:
                 continue
             operation_source = as_dict(path_item[method])
-            raw_operation_id = str(operation_source.get("operationId") or f"{method}_{path}")
+            default_operation_id = DEFAULT_OPERATION_ID_TEMPLATE.format(method=method, path=path)
+            raw_operation_id = str(operation_source.get("operationId") or default_operation_id)
             python_name = operation_registry.unique(to_snake_case(raw_operation_id))
 
             parameters = build_parameters(path_level_params + as_list(operation_source.get("parameters")), ctx)
@@ -104,7 +112,7 @@ def build_parameters(raw_parameters: list[Any], ctx: MappingContext) -> list[Par
         param = as_dict(raw_param)
         if "$ref" in param:
             continue
-        raw_name = str(param.get("name", "param"))
+        raw_name = str(param.get("name", DEFAULT_PARAM_NAME))
         python_name = name_registry.unique(to_snake_case(raw_name))
         schema = as_dict(param.get("schema"))
         type_hint = map_schema_type(schema, ctx=ctx)
@@ -115,7 +123,7 @@ def build_parameters(raw_parameters: list[Any], ctx: MappingContext) -> list[Par
             ParameterIR(
                 name=raw_name,
                 python_name=python_name,
-                location=str(param.get("in", "query")),
+                location=str(param.get("in", DEFAULT_PARAM_LOCATION)),
                 required=required,
                 type_hint=type_hint,
             )
@@ -127,14 +135,14 @@ def build_request_body(raw_request_body: Any, ctx: MappingContext) -> RequestBod
     if not isinstance(raw_request_body, dict):
         return None
     content = as_dict(raw_request_body.get("content"))
-    if "application/json" not in content:
+    if JSON_MEDIA_TYPE not in content:
         return None
 
-    media = as_dict(content["application/json"])
+    media = as_dict(content[JSON_MEDIA_TYPE])
     schema = as_dict(media.get("schema"))
     return RequestBodyIR(
         required=bool(raw_request_body.get("required", False)),
-        content_type="application/json",
+        content_type=JSON_MEDIA_TYPE,
         type_hint=map_schema_type(schema, ctx=ctx),
     )
 
@@ -146,12 +154,12 @@ def build_responses(raw_responses: Any, ctx: MappingContext) -> list[ResponseIR]
     for status in sorted(responses):
         source = as_dict(responses[status])
         content = as_dict(source.get("content"))
-        media = as_dict(content.get("application/json")) if "application/json" in content else None
+        media = as_dict(content.get(JSON_MEDIA_TYPE)) if JSON_MEDIA_TYPE in content else None
         schema = as_dict(media.get("schema")) if media is not None else None
         output.append(
             ResponseIR(
                 status_code=status,
-                content_type="application/json" if media is not None else None,
+                content_type=JSON_MEDIA_TYPE if media is not None else None,
                 type_hint=map_schema_type(schema, ctx=ctx) if schema is not None else None,
             )
         )
