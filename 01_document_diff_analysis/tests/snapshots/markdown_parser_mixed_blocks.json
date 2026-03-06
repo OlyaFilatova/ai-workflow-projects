@@ -1,0 +1,54 @@
+{
+  "blocks": [
+    {
+      "block_id": "heading-0000",
+      "index": 0,
+      "level": 1,
+      "text": "Release Plan",
+      "block_type": "heading"
+    },
+    {
+      "block_id": "paragraph-0001",
+      "index": 1,
+      "text": "This release prepares a stable API surface. It also improves deterministic behavior.",
+      "block_type": "paragraph"
+    },
+    {
+      "block_id": "list-0002",
+      "index": 2,
+      "ordered": false,
+      "items": [
+        "Normalize whitespace",
+        "Keep predictable block IDs"
+      ],
+      "block_type": "list"
+    },
+    {
+      "block_id": "table-0003",
+      "index": 3,
+      "rows": [
+        [
+          "model",
+          "ready"
+        ],
+        [
+          "parser",
+          "wip"
+        ]
+      ],
+      "header": [
+        "Module",
+        "Status"
+      ],
+      "block_type": "table"
+    },
+    {
+      "block_id": "paragraph-0004",
+      "index": 4,
+      "text": "Final notes paragraph with extra detail.",
+      "block_type": "paragraph"
+    }
+  ],
+  "source_format": "md",
+  "metadata": {}
+}

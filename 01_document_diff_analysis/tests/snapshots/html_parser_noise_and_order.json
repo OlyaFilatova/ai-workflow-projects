@@ -1,0 +1,44 @@
+{
+  "blocks": [
+    {
+      "block_id": "heading-0000",
+      "index": 0,
+      "level": 1,
+      "text": "Release Plan",
+      "block_type": "heading"
+    },
+    {
+      "block_id": "paragraph-0001",
+      "index": 1,
+      "text": "First paragraph for the report.",
+      "block_type": "paragraph"
+    },
+    {
+      "block_id": "list-0002",
+      "index": 2,
+      "ordered": false,
+      "items": [
+        "Deterministic output",
+        "Parser boundaries"
+      ],
+      "block_type": "list"
+    },
+    {
+      "block_id": "table-0003",
+      "index": 3,
+      "rows": [
+        [
+          "html",
+          "ready"
+        ]
+      ],
+      "header": [
+        "Module",
+        "Status"
+      ],
+      "block_type": "table"
+    }
+  ],
+  "source_format": "html",
+  "metadata": {}
+}

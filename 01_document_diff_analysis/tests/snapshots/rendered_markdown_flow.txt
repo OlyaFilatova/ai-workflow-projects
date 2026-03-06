@@ -1,0 +1,6 @@
+granularity: block+word
+= [0000] Release Summary
+~ [0001] Parser status is ready.
+  words: =Parser =status =is -in -progress. +ready.
+~ [0002] markdown parser; html parser; docx parser
+  words: =markdown =parser =html =parser +docx +parser
