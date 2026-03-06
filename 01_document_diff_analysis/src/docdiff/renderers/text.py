@@ -10,9 +10,7 @@ def _block_summary(item: DiffItem) -> str:
     if block is None:
         return "<empty>"
 
-    if block.block_type == "heading":
-        return block.text
-    if block.block_type == "paragraph":
+    if block.block_type in {"heading", "paragraph"}:
         return block.text
     if block.block_type == "list":
         return "; ".join(block.items)

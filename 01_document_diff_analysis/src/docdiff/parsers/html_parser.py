@@ -69,11 +69,11 @@ def _extract_paragraph(tag: Tag, index: int) -> ParagraphBlock | None:
 
 
 def _extract_list(tag: Tag, index: int) -> ListBlock | None:
-    items = [
-        normalize_text(item.get_text(" ", strip=True))
-        for item in tag.find_all("li", recursive=False)
-        if normalize_text(item.get_text(" ", strip=True))
-    ]
+    items: list[str] = []
+    for item in tag.find_all("li", recursive=False):
+        normalized_item = normalize_text(item.get_text(" ", strip=True))
+        if normalized_item:
+            items.append(normalized_item)
     if not items:
         return None
     return ListBlock(

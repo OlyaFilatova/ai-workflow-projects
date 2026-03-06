@@ -35,6 +35,7 @@ _OPCODE_EQUAL = "equal"
 _OPCODE_DELETE = "delete"
 _OPCODE_INSERT = "insert"
 _OPCODE_REPLACE = "replace"
+_WORD_DIFF_BLOCKS = _TEXTUAL_BLOCKS + (TableBlock,)
 
 
 def _block_signature(block: Block) -> tuple[str, str]:
@@ -52,9 +53,7 @@ def _block_signature(block: Block) -> tuple[str, str]:
 
 
 def _block_text(block: Block) -> str:
-    if isinstance(block, HeadingBlock):
-        return block.text
-    if isinstance(block, ParagraphBlock):
+    if isinstance(block, (HeadingBlock, ParagraphBlock)):
         return block.text
     if isinstance(block, ListBlock):
         return _TEXT_PART_SEPARATOR.join(block.items)
@@ -87,15 +86,7 @@ def _word_diff(before_text: str, after_text: str) -> list[WordDiff]:
 
 def _build_modified_item(before: Block, after: Block, granularity: Granularity) -> DiffItem:
     include_word_diff = granularity in {"block+word", "word"}
-    if include_word_diff and (isinstance(before, _TEXTUAL_BLOCKS) or isinstance(after, _TEXTUAL_BLOCKS)):
-        return DiffItem(
-            change_type=_CHANGE_MODIFIED,
-            before=before,
-            after=after,
-            word_diffs=_word_diff(_block_text(before), _block_text(after)),
-        )
-
-    if include_word_diff and (isinstance(before, TableBlock) or isinstance(after, TableBlock)):
+    if include_word_diff and (isinstance(before, _WORD_DIFF_BLOCKS) or isinstance(after, _WORD_DIFF_BLOCKS)):
         return DiffItem(
             change_type=_CHANGE_MODIFIED,
             before=before,
