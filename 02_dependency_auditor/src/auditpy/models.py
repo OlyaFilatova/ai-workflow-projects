@@ -19,7 +19,12 @@ class Severity(StrEnum):
 
 @dataclass(slots=True, frozen=True)
 class PackageNode:
-    """A resolved package node in the dependency graph."""
+    """A resolved package node in the dependency graph.
+
+    Attributes:
+        name: Package name as resolved from installed metadata.
+        version: Installed package version.
+    """
 
     name: str
     version: str
@@ -31,7 +36,13 @@ class PackageNode:
 
 @dataclass(slots=True, frozen=True)
 class DependencyEdge:
-    """A directed dependency relationship between two packages."""
+    """A directed dependency relationship between two packages.
+
+    Attributes:
+        source: Upstream package that declares the dependency.
+        target: Downstream package that is depended upon.
+        requirement: Raw requirement string from package metadata, when available.
+    """
 
     source: str
     target: str
@@ -48,7 +59,16 @@ class DependencyEdge:
 
 @dataclass(slots=True, frozen=True)
 class VulnerabilityFinding:
-    """A vulnerability detected for a resolved package."""
+    """A vulnerability detected for a resolved package.
+
+    Attributes:
+        package: Affected package name.
+        version: Affected package version.
+        vuln_id: Vulnerability identifier from OSV.
+        severity: Normalized severity level.
+        summary: Optional human-readable vulnerability summary.
+        paths: Dependency paths from roots to the affected package.
+    """
 
     package: str
     version: str
@@ -71,7 +91,17 @@ class VulnerabilityFinding:
 
 @dataclass(slots=True, frozen=True)
 class LicenseFinding:
-    """A normalized license evaluation result for a package."""
+    """A normalized license evaluation result for a package.
+
+    Attributes:
+        package: Package name.
+        version: Package version.
+        declared: Raw declared license value from metadata.
+        normalized_spdx: Normalized SPDX expression, when derivable.
+        policy_name: Active policy used for evaluation.
+        policy_result: Policy outcome (`allow`, `warn`, or `violation`).
+        paths: Dependency paths from roots to the package.
+    """
 
     package: str
     version: str
@@ -96,7 +126,16 @@ class LicenseFinding:
 
 @dataclass(slots=True)
 class Report:
-    """Top-level report model containing scan results and metadata."""
+    """Top-level report model containing scan results and metadata.
+
+    Attributes:
+        python_version: Python runtime version used for the scan.
+        timestamp: Report generation timestamp in ISO format.
+        nodes: Resolved package nodes.
+        edges: Resolved dependency edges.
+        vulnerabilities: Vulnerability findings included in the report.
+        licenses: License policy findings included in the report.
+    """
 
     python_version: str
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())

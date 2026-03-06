@@ -16,7 +16,17 @@ class RequirementsParseError(ValueError):
 
 @dataclass(slots=True, frozen=True)
 class RootRequirement:
-    """A parsed root requirement entry with source metadata."""
+    """A parsed root requirement entry with source metadata.
+
+    Attributes:
+        name: Requirement package name.
+        specifier: Version specifier string from the requirement.
+        extras: Sorted extras requested for the requirement.
+        marker: Optional environment marker expression.
+        source_file: Absolute path to the file where entry was parsed.
+        line_number: 1-based line number in `source_file`.
+        raw: Original normalized requirement line.
+    """
 
     name: str
     specifier: str
@@ -34,7 +44,12 @@ class RootRequirement:
 
 @dataclass(slots=True)
 class ParseResult:
-    """Parser output containing accepted requirements and non-fatal warnings."""
+    """Parser output containing accepted requirements and non-fatal warnings.
+
+    Attributes:
+        requirements: Accepted root requirements in parse order.
+        warnings: Non-fatal parsing warnings (for example marker-skipped lines).
+    """
 
     requirements: list[RootRequirement]
     warnings: list[str]
