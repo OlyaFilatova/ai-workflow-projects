@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+from typing import cast
 
 import httpx
 import pytest
@@ -53,7 +54,9 @@ class ParsedError:
 
 def test_sync_request_construction_and_auth_injection() -> None:
     """Test sync request construction and auth injection."""
-    captured: dict[str, object] = {}
+    captured_url = ""
+    captured_headers: dict[str, str] = {}
+    captured_body = ""
 
     def handler(request: httpx.Request) -> httpx.Response:
         """Run handler.
@@ -61,9 +64,10 @@ def test_sync_request_construction_and_auth_injection() -> None:
         Args:
             request: Argument value.
         """
-        captured["url"] = str(request.url)
-        captured["headers"] = dict(request.headers)
-        captured["body"] = request.content.decode("utf-8")
+        nonlocal captured_url, captured_headers, captured_body
+        captured_url = str(request.url)
+        captured_headers = dict(request.headers)
+        captured_body = request.content.decode("utf-8")
         return httpx.Response(200, json={"name": "example"})
 
     transport = httpx.MockTransport(handler)
@@ -85,14 +89,15 @@ def test_sync_request_construction_and_auth_injection() -> None:
 
     assert isinstance(model, ParsedModel)
     assert model.name == "example"
-    assert captured["url"] == "https://api.example.com/pets/a%2Fb?limit=10"
-    assert captured["headers"]["authorization"] == "Bearer default-token"
-    assert captured["headers"]["x-api-key"] == "default-key"
+    assert captured_url == "https://api.example.com/pets/a%2Fb?limit=10"
+    assert captured_headers["authorization"] == "Bearer default-token"
+    assert captured_headers["x-api-key"] == "default-key"
+    assert isinstance(captured_body, str)
 
 
 def test_sync_auth_override_beats_default() -> None:
     """Test sync auth override beats default."""
-    captured: dict[str, object] = {}
+    captured_headers: dict[str, str] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         """Run handler.
@@ -100,7 +105,8 @@ def test_sync_auth_override_beats_default() -> None:
         Args:
             request: Argument value.
         """
-        captured["headers"] = dict(request.headers)
+        nonlocal captured_headers
+        captured_headers = dict(request.headers)
         return httpx.Response(200, json={})
 
     transport = httpx.MockTransport(handler)
@@ -118,8 +124,8 @@ def test_sync_auth_override_beats_default() -> None:
         api_key="override-key",
     )
 
-    assert captured["headers"]["authorization"] == "Bearer override-token"
-    assert captured["headers"]["x-api-key"] == "override-key"
+    assert captured_headers["authorization"] == "Bearer override-token"
+    assert captured_headers["x-api-key"] == "override-key"
 
 
 def test_response_parsing_and_204_handling() -> None:
@@ -177,7 +183,7 @@ def test_error_mapping_and_parsed_error_payload() -> None:
 
 def test_async_request_construction_and_response_parse() -> None:
     """Test async request construction and response parse."""
-    captured: dict[str, object] = {}
+    captured_url = ""
 
     async def run() -> ParsedModel:
         """Run run."""
@@ -187,7 +193,8 @@ def test_async_request_construction_and_response_parse() -> None:
             Args:
                 request: Argument value.
             """
-            captured["url"] = str(request.url)
+            nonlocal captured_url
+            captured_url = str(request.url)
             return httpx.Response(200, json={"name": "async"})
 
         transport = httpx.MockTransport(handler)
@@ -197,15 +204,16 @@ def test_async_request_construction_and_response_parse() -> None:
         )
 
         try:
-            return await async_client.request(
+            raw_result = await async_client.request(
                 method="GET",
                 path="/items/{item_id}",
                 path_params={"item_id": "hello world"},
                 response_model=ParsedModel,
             )
+            return cast(ParsedModel, raw_result)
         finally:
             await async_client.aclose()
 
     result = asyncio.run(run())
     assert isinstance(result, ParsedModel)
-    assert captured["url"] == "https://api.example.com/items/hello%20world"
+    assert captured_url == "https://api.example.com/items/hello%20world"

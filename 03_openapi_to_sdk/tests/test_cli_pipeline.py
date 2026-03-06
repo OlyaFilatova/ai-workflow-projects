@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from openapi_to_sdk.cli.main import main
 
 
@@ -72,7 +74,7 @@ def _read_tree(root: Path) -> dict[str, str]:
     return files
 
 
-def test_cli_generate_smoke(tmp_path: Path, capsys) -> None:
+def test_cli_generate_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test cli generate smoke.
 
     Args:
@@ -92,7 +94,7 @@ def test_cli_generate_smoke(tmp_path: Path, capsys) -> None:
     assert (out / "pet_api" / "client.py").exists()
 
 
-def test_cli_reports_invalid_spec(tmp_path: Path, capsys) -> None:
+def test_cli_reports_invalid_spec(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test cli reports invalid spec.
 
     Args:
@@ -108,7 +110,7 @@ def test_cli_reports_invalid_spec(tmp_path: Path, capsys) -> None:
     assert "error:" in captured.err
 
 
-def test_cli_overwrite_behavior(tmp_path: Path, capsys) -> None:
+def test_cli_overwrite_behavior(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """Test cli overwrite behavior.
 
     Args:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from openapi_to_sdk.parser.errors import OpenAPILoadError
 
@@ -19,7 +19,7 @@ def load_openapi_document(spec_path: Path) -> dict[str, Any]:
     document = _load_file(path, cache)
     _validate_openapi_top_level(document, path)
     resolved = _resolve_node(document, current_file=path, cache=cache, stack=set())
-    return _sorted_dicts(resolved)
+    return cast(dict[str, Any], _sorted_dicts(resolved))
 
 
 def _load_file(path: Path, cache: dict[Path, dict[str, Any]]) -> dict[str, Any]:
@@ -60,7 +60,7 @@ def _load_yaml(text: str) -> dict[str, Any]:
         text: Raw YAML document text.
     """
     try:
-        import yaml  # type: ignore[import-not-found]
+        import yaml  # type: ignore[import-untyped]
     except ModuleNotFoundError as exc:
         raise OpenAPILoadError(
             "YAML parsing requires PyYAML. Install with 'pip install pyyaml'."

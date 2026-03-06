@@ -178,7 +178,11 @@ def _operation_to_template(operation: OperationIR, schema_names: set[str]) -> _T
         None,
     )
 
-    return_type = success_response.type_hint if success_response is not None else "None"
+    return_type = (
+        success_response.type_hint
+        if success_response is not None and success_response.type_hint is not None
+        else "None"
+    )
     response_model = return_type if return_type in schema_names else None
 
     error_type = error_response.type_hint if error_response is not None else None

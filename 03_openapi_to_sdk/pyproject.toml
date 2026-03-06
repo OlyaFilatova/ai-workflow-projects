@@ -58,3 +58,4 @@ strict = true
 warn_unused_configs = true
 mypy_path = "src"
 packages = ["openapi_to_sdk"]
+exclude = ["build", "tests/golden"]
