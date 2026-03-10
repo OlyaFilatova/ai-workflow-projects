@@ -194,7 +194,14 @@ def _collect_installed_distributions(python_bin: Path) -> list[dict[str, object]
         stderr = result.stderr.strip() or "Unable to inspect installed distributions"
         raise RuntimeError(f"Metadata inspection failed: {stderr}")
 
-    distribution_metadata = json.loads(result.stdout)
+    raw_metadata = json.loads(result.stdout)
+    if not isinstance(raw_metadata, list):
+        raise RuntimeError("Metadata inspection failed: invalid distribution payload")
+
+    distribution_metadata: list[dict[str, object]] = []
+    for item in raw_metadata:
+        if isinstance(item, dict):
+            distribution_metadata.append(dict(item))
     distribution_metadata.sort(
         key=lambda distribution: (str(distribution["name"]).lower(), str(distribution["version"]))
     )
@@ -219,7 +226,8 @@ def _build_edges(
     for distribution in installed:
         source_name = str(distribution["name"])
         source_norm = canonicalize_name(source_name)
-        requirements = distribution.get("requires") or []
+        raw_requirements = distribution.get("requires")
+        requirements = raw_requirements if isinstance(raw_requirements, list) else []
 
         for raw_req in requirements:
             raw_req_str = str(raw_req)

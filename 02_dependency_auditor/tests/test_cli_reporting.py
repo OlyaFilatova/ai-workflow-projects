@@ -5,6 +5,7 @@ import json
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from unittest import mock
+from unittest.mock import MagicMock
 
 from auditpy.cli import main
 from auditpy.models import LicenseFinding, PackageNode, Severity, VulnerabilityFinding
@@ -15,7 +16,11 @@ from auditpy.vulnerabilities import VulnerabilityScanResult
 @mock.patch("auditpy.cli.evaluate_licenses")
 @mock.patch("auditpy.cli.scan_vulnerabilities")
 @mock.patch("auditpy.cli.resolve_dependencies")
-def test_exit_code_zero_and_json_schema(mock_resolve, mock_vuln, mock_license) -> None:
+def test_exit_code_zero_and_json_schema(
+    mock_resolve: MagicMock,
+    mock_vuln: MagicMock,
+    mock_license: MagicMock,
+) -> None:
     mock_resolve.return_value = ResolutionOutcome(
         nodes=[PackageNode(name="requests", version="2.31.0")],
         edges=[],
@@ -54,7 +59,11 @@ def test_exit_code_zero_and_json_schema(mock_resolve, mock_vuln, mock_license) -
 @mock.patch("auditpy.cli.evaluate_licenses")
 @mock.patch("auditpy.cli.scan_vulnerabilities")
 @mock.patch("auditpy.cli.resolve_dependencies")
-def test_exit_code_one_on_threshold_violation(mock_resolve, mock_vuln, mock_license) -> None:
+def test_exit_code_one_on_threshold_violation(
+    mock_resolve: MagicMock,
+    mock_vuln: MagicMock,
+    mock_license: MagicMock,
+) -> None:
     mock_resolve.return_value = ResolutionOutcome(
         nodes=[PackageNode(name="requests", version="2.31.0")],
         edges=[],
@@ -86,7 +95,11 @@ def test_exit_code_one_on_threshold_violation(mock_resolve, mock_vuln, mock_lice
 @mock.patch("auditpy.cli.evaluate_licenses")
 @mock.patch("auditpy.cli.scan_vulnerabilities")
 @mock.patch("auditpy.cli.resolve_dependencies")
-def test_exit_code_one_on_license_violation(mock_resolve, mock_vuln, mock_license) -> None:
+def test_exit_code_one_on_license_violation(
+    mock_resolve: MagicMock,
+    mock_vuln: MagicMock,
+    mock_license: MagicMock,
+) -> None:
     mock_resolve.return_value = ResolutionOutcome(
         nodes=[PackageNode(name="requests", version="2.31.0")],
         edges=[],
@@ -116,7 +129,7 @@ def test_exit_code_one_on_license_violation(mock_resolve, mock_vuln, mock_licens
 
 
 @mock.patch("auditpy.cli.resolve_dependencies")
-def test_exit_code_two_on_runtime_error(mock_resolve) -> None:
+def test_exit_code_two_on_runtime_error(mock_resolve: MagicMock) -> None:
     mock_resolve.return_value = ResolutionOutcome(
         error=ResolutionFailure(category="runtime", message="boom", exit_code=2)
     )

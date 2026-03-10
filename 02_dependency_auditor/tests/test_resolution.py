@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 from unittest import mock
+from unittest.mock import MagicMock
 
 from auditpy.resolution import ResolutionFailure, _build_paths, resolve_dependencies
 
@@ -30,7 +31,11 @@ def test_build_paths_from_roots() -> None:
 @mock.patch("auditpy.resolution._collect_installed_distributions")
 @mock.patch("auditpy.resolution._pip_install_requirements")
 @mock.patch("auditpy.resolution._create_venv")
-def test_resolution_success_flow(_mock_venv, _mock_pip, mock_collect) -> None:
+def test_resolution_success_flow(
+    _mock_venv: MagicMock,
+    _mock_pip: MagicMock,
+    mock_collect: MagicMock,
+) -> None:
     mock_collect.return_value = [
         {"name": "requests", "version": "2.31.0", "requires": ["urllib3>=2", "idna>=3"]},
         {"name": "urllib3", "version": "2.2.0", "requires": []},
@@ -50,7 +55,7 @@ def test_resolution_success_flow(_mock_venv, _mock_pip, mock_collect) -> None:
 
 @mock.patch("auditpy.resolution._pip_install_requirements")
 @mock.patch("auditpy.resolution._create_venv")
-def test_pip_install_failure_is_runtime_error(_mock_venv, mock_pip) -> None:
+def test_pip_install_failure_is_runtime_error(_mock_venv: MagicMock, mock_pip: MagicMock) -> None:
     mock_pip.side_effect = RuntimeError("Dependency resolution failed: network unavailable")
 
     with tempfile.TemporaryDirectory() as tmp_dir:

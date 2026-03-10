@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from auditpy.models import Report, Severity
+from auditpy.models import LicenseFinding, Report, Severity
 
 SEVERITY_ORDER = [Severity.LOW, Severity.MEDIUM, Severity.HIGH, Severity.CRITICAL]
 SUMMARY_TOTAL_PACKAGES_LABEL = "Total packages"
@@ -25,8 +25,8 @@ def render_cli_summary(report: Report) -> str:
         report: Report model with dependencies, vulnerabilities, and license findings.
     """
     severity_counts = {severity.value: 0 for severity in SEVERITY_ORDER}
-    for finding in report.vulnerabilities:
-        severity_counts[finding.severity.value] += 1
+    for vulnerability_finding in report.vulnerabilities:
+        severity_counts[vulnerability_finding.severity.value] += 1
 
     license_violations = [item for item in report.licenses if item.policy_result == "violation"]
     license_warnings = [item for item in report.licenses if item.policy_result == "warn"]
@@ -40,22 +40,26 @@ def render_cli_summary(report: Report) -> str:
 
     if report.vulnerabilities:
         lines.append(SUMMARY_VULNERABILITY_FINDINGS_LABEL)
-        for finding in report.vulnerabilities:
-            lines.append(f"  - {finding.package}=={finding.version} {finding.vuln_id} ({finding.severity.value})")
-            for path in finding.paths:
+        for vulnerability_finding in report.vulnerabilities:
+            lines.append(
+                f"  - {vulnerability_finding.package}=={vulnerability_finding.version} "
+                f"{vulnerability_finding.vuln_id} ({vulnerability_finding.severity.value})"
+            )
+            for path in vulnerability_finding.paths:
                 lines.append(f"    path: {' -> '.join(path)}")
             lines.append(f"    {VULNERABILITY_REMEDIATION_TEXT}")
 
     if license_violations or license_warnings:
         lines.append(SUMMARY_LICENSE_FINDINGS_LABEL)
-        for finding in [*license_violations, *license_warnings]:
+        license_findings: list[LicenseFinding] = [*license_violations, *license_warnings]
+        for license_finding in license_findings:
             lines.append(
-                f"  - {finding.package}=={finding.version} {finding.policy_result} "
-                f"({finding.normalized_spdx or 'unknown'})"
+                f"  - {license_finding.package}=={license_finding.version} {license_finding.policy_result} "
+                f"({license_finding.normalized_spdx or 'unknown'})"
             )
-            for path in finding.paths:
+            for path in license_finding.paths:
                 lines.append(f"    path: {' -> '.join(path)}")
-            if finding.policy_result == "violation":
+            if license_finding.policy_result == "violation":
                 lines.append(f"    {LICENSE_REMEDIATION_TEXT}")
 
     return "\n".join(lines)

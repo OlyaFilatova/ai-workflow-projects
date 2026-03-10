@@ -80,6 +80,15 @@ run_lint() {
     echo "No supported linter installed (expected ruff or flake8)." >&2
     return 1
   fi
+
+  if grep -q '^\[tool\.mypy\]' pyproject.toml 2>/dev/null; then
+    if "$py" -m mypy --version >/dev/null 2>&1; then
+      "$py" -m mypy .
+    else
+      echo "mypy is configured for this project but is not installed." >&2
+      return 1
+    fi
+  fi
 }
 
 run_tests() {
