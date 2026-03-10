@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from ..errors import ParseError
-from ..models import ParseEvent, Statement
+from ..models import Dialect, ParseEvent, Statement
 
 _COPY_HEADER_LINE_RE = re.compile(r"^COPY\s+.+\s+FROM\s+stdin;\s*$", re.IGNORECASE)
 
@@ -189,7 +189,7 @@ def _split_sql_chunk(text: str, start_line: int) -> list[ParseEvent]:
 
     return events
 
-def _detect_dialect(statement: str) -> str:
+def _detect_dialect(statement: str) -> Dialect:
     """Infer source dialect from SQL statement text.
 
     Args:

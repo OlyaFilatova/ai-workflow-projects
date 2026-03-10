@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 from ..diagnostics import WarningCollector
 from ..errors import LoadError
 from ..models import LoadStats, ParseEvent, TranslationArtifact
@@ -20,7 +22,15 @@ _COPY_LOAD_ERROR_MESSAGE = (
 )
 
 
-def load_into_engine(engine: object, text: str) -> LoadStats:
+class _LoadEngine(Protocol):
+    """Minimal engine surface required by the loader."""
+
+    def execute(self, sql: str) -> None: ...
+
+    def executemany(self, sql: str, rows: list[tuple[object, ...]]) -> None: ...
+
+
+def load_into_engine(engine: _LoadEngine, text: str) -> LoadStats:
     """Load SQL dump text into the provided engine.
 
     Args:
@@ -64,7 +74,7 @@ def _collect_translation_warnings(
     warning_collector.events.extend(artifact.warnings)
 
 
-def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -> int:
+def _execute_translated_statement(engine: _LoadEngine, event: ParseEvent, sql: str) -> int:
     """Execute translated SQL and return executed statement count.
 
     Args:
@@ -88,7 +98,7 @@ def _execute_translated_statement(engine: object, event: ParseEvent, sql: str) -
     return executed_statement_count
 
 
-def _load_copy_event(engine: object, event: ParseEvent) -> int:
+def _load_copy_event(engine: _LoadEngine, event: ParseEvent) -> int:
     """Load rows from a PostgreSQL COPY parse event.
 
     Args:
