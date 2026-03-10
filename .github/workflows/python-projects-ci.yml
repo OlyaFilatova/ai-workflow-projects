@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           if python -m ruff --version >/dev/null 2>&1; then
-            python -m ruff check .
+            python -m ruff check --exclude=tests/golden .
           elif python -m flake8 --version >/dev/null 2>&1; then
             python -m flake8 .
           else

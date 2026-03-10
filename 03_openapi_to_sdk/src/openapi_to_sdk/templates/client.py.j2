@@ -1,0 +1,72 @@
+from __future__ import annotations
+
+from typing import Any
+
+from openapi_to_sdk.runtime.clients import AsyncClient as RuntimeAsyncClient
+from openapi_to_sdk.runtime.clients import SyncClient as RuntimeSyncClient
+
+from .models import *
+
+
+class Client(RuntimeSyncClient):
+{% if operations %}
+{% for op in operations %}
+    def {{ op.method_name }}(
+        self,
+        *,
+        path_params: dict[str, str] | None = None,
+        query: dict[str, object] | None = None,
+        json_body: object | None = None,
+        headers: dict[str, str] | None = None,
+        bearer_token: str | None = None,
+        api_key: str | None = None,
+    ) -> {{ op.return_type }}:
+        return self.request(
+            method={{ op.http_method | tojson }},
+            path={{ op.path | tojson }},
+            path_params=path_params,
+            query=query,
+            json_body=json_body,
+            headers=headers,
+            bearer_token=bearer_token,
+            api_key=api_key,
+            response_model={{ op.response_model if op.response_model else 'None' }},
+            error_model={{ op.error_model if op.error_model else 'None' }},
+        )
+
+{% endfor %}
+{% else %}
+    pass
+{% endif %}
+
+
+class AsyncClient(RuntimeAsyncClient):
+{% if operations %}
+{% for op in operations %}
+    async def {{ op.method_name }}(
+        self,
+        *,
+        path_params: dict[str, str] | None = None,
+        query: dict[str, object] | None = None,
+        json_body: object | None = None,
+        headers: dict[str, str] | None = None,
+        bearer_token: str | None = None,
+        api_key: str | None = None,
+    ) -> {{ op.return_type }}:
+        return await self.request(
+            method={{ op.http_method | tojson }},
+            path={{ op.path | tojson }},
+            path_params=path_params,
+            query=query,
+            json_body=json_body,
+            headers=headers,
+            bearer_token=bearer_token,
+            api_key=api_key,
+            response_model={{ op.response_model if op.response_model else 'None' }},
+            error_model={{ op.error_model if op.error_model else 'None' }},
+        )
+
+{% endfor %}
+{% else %}
+    pass
+{% endif %}

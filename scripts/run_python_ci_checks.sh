@@ -73,7 +73,7 @@ install_deps() {
 run_lint() {
   local py="$1"
   if "$py" -m ruff --version >/dev/null 2>&1; then
-    "$py" -m ruff check .
+    "$py" -m ruff check --exclude=tests/golden .
   elif "$py" -m flake8 --version >/dev/null 2>&1; then
     "$py" -m flake8 .
   else

@@ -1,0 +1,3 @@
+{% macro render_field(field) -%}
+    {{ field.name }}: {{ field.type_hint }}{% if field.alias and field.required %} = Field(alias={{ field.alias | tojson }}){% elif field.alias and not field.required %} = Field(default=None, alias={{ field.alias | tojson }}){% elif not field.required %} = None{% endif %}
+{%- endmacro %}
