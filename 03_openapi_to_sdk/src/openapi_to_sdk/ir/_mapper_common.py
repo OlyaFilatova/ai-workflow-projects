@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import keyword
 import re
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -91,7 +92,14 @@ def as_dict(value: Any) -> dict[str, Any]:
     Args:
         value: Candidate mapping value.
     """
-    return value if isinstance(value, dict) else {}
+    if isinstance(value, dict):
+        return value
+    if value is not None:
+        warnings.warn(
+            f"Expected dict but got {type(value).__name__}; value will be discarded.",
+            stacklevel=2,
+        )
+    return {}
 
 
 def as_list(value: Any) -> list[Any]:
@@ -100,4 +108,11 @@ def as_list(value: Any) -> list[Any]:
     Args:
         value: Candidate list value.
     """
-    return value if isinstance(value, list) else []
+    if isinstance(value, list):
+        return value
+    if value is not None:
+        warnings.warn(
+            f"Expected list but got {type(value).__name__}; value will be discarded.",
+            stacklevel=2,
+        )
+    return []

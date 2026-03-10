@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -198,7 +199,7 @@ def _operation_to_template(operation: OperationIR, schema_names: set[str]) -> _T
     )
 
 
-def _collect_type_imports(schemas: list[_TemplateSchema]) -> tuple[list[str], list[str]]:
+def _collect_type_imports(schemas: list[_TemplateSchema]) -> tuple[list[str], dict[str, list[str]]]:
     """Collect typing and stdlib imports required by rendered model hints.
 
     Args:
@@ -210,20 +211,23 @@ def _collect_type_imports(schemas: list[_TemplateSchema]) -> tuple[list[str], li
         hints.extend(field.type_hint for field in schema.fields)
 
     typing_imports: list[str] = []
-    stdlib_imports: list[str] = []
+    stdlib_imports: dict[str, set[str]] = {}
 
-    if any("Any" in hint for hint in hints):
+    if any(re.search(r"\bAny\b", hint) for hint in hints):
         typing_imports.append("Any")
-    if any("Literal[" in hint for hint in hints):
+    if any(re.search(r"\bLiteral\s*\[", hint) for hint in hints):
         typing_imports.append("Literal")
-    if any("datetime" in hint for hint in hints):
-        stdlib_imports.append("datetime")
-    if any("date" in hint for hint in hints):
-        stdlib_imports.append("date")
-    if any("UUID" in hint for hint in hints):
-        stdlib_imports.append("UUID")
+    if any(re.search(r"\bdatetime\b", hint) for hint in hints):
+        stdlib_imports.setdefault("datetime", set()).add("datetime")
+    if any(re.search(r"\bdate\b", hint) for hint in hints):
+        stdlib_imports.setdefault("datetime", set()).add("date")
+    if any(re.search(r"\bUUID\b", hint) for hint in hints):
+        stdlib_imports.setdefault("uuid", set()).add("UUID")
 
-    return sorted(set(typing_imports)), sorted(set(stdlib_imports))
+    normalized_stdlib_imports = {
+        module: sorted(symbols) for module, symbols in sorted(stdlib_imports.items())
+    }
+    return sorted(set(typing_imports)), normalized_stdlib_imports
 
 
 def _package_name(title: str) -> str:

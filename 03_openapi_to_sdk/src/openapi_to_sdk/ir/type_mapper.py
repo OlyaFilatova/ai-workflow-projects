@@ -15,9 +15,6 @@ from openapi_to_sdk.ir._operation_mapping import build_auth_schemes, build_opera
 from openapi_to_sdk.ir._schema_mapping import build_schema_ir, map_schema_type
 from openapi_to_sdk.ir.models import ApiIR
 
-# Backward-compatible alias for internal callers that referenced the old private type.
-_MappingContext = MappingContext
-
 
 def build_api_ir(document: dict[str, Any]) -> ApiIR:
     """Build the full API IR from a resolved OpenAPI document.

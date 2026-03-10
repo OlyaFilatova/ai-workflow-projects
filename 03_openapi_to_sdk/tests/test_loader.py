@@ -9,11 +9,11 @@ from openapi_to_sdk.parser import OpenAPILoadError, load_openapi_document
 
 
 def _write(path: Path, content: str) -> None:
-    """Run write.
+    """Write UTF-8 text content to a file path.
 
     Args:
-        path: Argument value.
-        content: Argument value.
+        path: Filesystem path used by the helper.
+        content: UTF-8 text content to write.
     """
     path.write_text(content, encoding="utf-8")
 
@@ -22,7 +22,7 @@ def test_loads_json_openapi_document(tmp_path: Path) -> None:
     """Test loads json openapi document.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     spec = tmp_path / "spec.json"
     spec.write_text(
@@ -46,7 +46,7 @@ def test_loads_yaml_document_when_yaml_available(tmp_path: Path) -> None:
     """Test loads yaml document when yaml available.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     spec = tmp_path / "spec.yaml"
     _write(
@@ -75,8 +75,8 @@ def test_supports_openapi_30_and_31(tmp_path: Path, version: str) -> None:
     """Test supports openapi 30 and 31.
 
     Args:
-        tmp_path: Argument value.
-        version: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
+        version: OpenAPI version string under test.
     """
     spec = tmp_path / "spec.json"
     spec.write_text(
@@ -98,7 +98,7 @@ def test_resolves_relative_ref_file(tmp_path: Path) -> None:
     """Test resolves relative ref file.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     schema_file = tmp_path / "schemas.json"
     schema_file.write_text(
@@ -144,7 +144,7 @@ def test_detects_circular_ref(tmp_path: Path) -> None:
     """Test detects circular ref.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     spec = tmp_path / "spec.json"
     spec.write_text(
@@ -181,9 +181,9 @@ def test_invalid_top_level_errors(tmp_path: Path, payload: dict[str, object], er
     """Test invalid top level errors.
 
     Args:
-        tmp_path: Argument value.
-        payload: Argument value.
-        error: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
+        payload: Parameterized input payload for the test case.
+        error: Expected error message fragment for assertion.
     """
     spec = tmp_path / "bad.json"
     spec.write_text(json.dumps(payload), encoding="utf-8")

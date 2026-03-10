@@ -12,7 +12,7 @@ from openapi_to_sdk.ir.models import ApiIR, FieldIR, SchemaIR
 
 
 def _sample_ir() -> ApiIR:
-    """Run sample ir."""
+    """Build a representative API IR fixture for renderer tests."""
     user_schema = SchemaIR(
         name="User",
         python_name="User",
@@ -33,10 +33,10 @@ def _sample_ir() -> ApiIR:
 
 
 def _normalize(source: str) -> str:
-    """Run normalize.
+    """Normalize source text for deterministic snapshot comparisons.
 
     Args:
-        source: Argument value.
+        source: Input source text to normalize.
     """
     lines = [line.rstrip() for line in source.splitlines()]
     compact: list[str] = []
@@ -54,7 +54,7 @@ def test_template_render_generates_valid_python(tmp_path: Path) -> None:
     """Test template render generates valid python.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     render_sdk(_sample_ir(), tmp_path)
 
@@ -75,7 +75,7 @@ def test_template_render_is_deterministic(tmp_path: Path) -> None:
     """Test template render is deterministic.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     ir = _sample_ir()
 
@@ -95,12 +95,12 @@ def test_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
     """Test template render matches golden snapshot.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     render_sdk(_sample_ir(), tmp_path)
 
     generated = (tmp_path / "demo_api" / "models.py").read_text(encoding="utf-8")
-    golden = (Path(__file__).parent / "golden" / "models_snapshot.py").read_text(encoding="utf-8")
+    golden = (Path(__file__).parent / "golden" / "models.py").read_text(encoding="utf-8")
 
     assert _normalize(generated) == _normalize(golden)
 
@@ -109,12 +109,12 @@ def test_client_template_render_matches_golden_snapshot(tmp_path: Path) -> None:
     """Test client template render matches golden snapshot.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     render_sdk(_sample_ir(), tmp_path)
 
     generated = (tmp_path / "demo_api" / "client.py").read_text(encoding="utf-8")
-    golden = (Path(__file__).parent / "golden" / "client_snapshot.py").read_text(encoding="utf-8")
+    golden = (Path(__file__).parent / "golden" / "client.py").read_text(encoding="utf-8")
 
     assert _normalize(generated) == _normalize(golden)
 
@@ -123,7 +123,7 @@ def test_generated_package_import_smoke_when_pydantic_available(tmp_path: Path) 
     """Test generated package import smoke when pydantic available.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     if importlib.util.find_spec("pydantic") is None:
         pytest.skip("pydantic not installed in this environment")
@@ -137,3 +137,30 @@ def test_generated_package_import_smoke_when_pydantic_available(tmp_path: Path) 
         sys.path.pop(0)
 
     assert hasattr(module, "User")
+
+
+def test_template_render_renders_stdlib_imports_by_module(tmp_path: Path) -> None:
+    """Test stdlib imports render as module-to-symbol mappings.
+
+    Args:
+        tmp_path: Temporary directory path provided by pytest.
+    """
+    dated_schema = SchemaIR(
+        name="AuditRecord",
+        python_name="AuditRecord",
+        kind="model",
+        type_hint="AuditRecord",
+        fields=[
+            FieldIR(name="created_at", python_name="created_at", type_hint="datetime", required=True),
+            FieldIR(name="created_on", python_name="created_on", type_hint="date", required=True),
+            FieldIR(name="event_id", python_name="event_id", type_hint="UUID", required=True),
+        ],
+    )
+    ir = ApiIR(title="Dates API", version="1.0.0", schemas=[dated_schema])
+
+    render_sdk(ir, tmp_path)
+
+    generated = (tmp_path / "dates_api" / "models.py").read_text(encoding="utf-8")
+
+    assert "from datetime import date, datetime" in generated
+    assert "from uuid import UUID" in generated

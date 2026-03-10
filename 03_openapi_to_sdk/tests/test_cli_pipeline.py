@@ -9,10 +9,10 @@ from openapi_to_sdk.cli.main import main
 
 
 def _write_spec(path: Path) -> None:
-    """Run write spec.
+    """Write a minimal OpenAPI spec fixture to disk.
 
     Args:
-        path: Argument value.
+        path: Filesystem path used by the helper.
     """
     path.write_text(
         json.dumps(
@@ -62,10 +62,10 @@ def _write_spec(path: Path) -> None:
 
 
 def _read_tree(root: Path) -> dict[str, str]:
-    """Run read tree.
+    """Read a directory tree into a relative-path-to-content mapping.
 
     Args:
-        root: Argument value.
+        root: Root directory to walk recursively.
     """
     files: dict[str, str] = {}
     for item in sorted(root.rglob("*")):
@@ -78,8 +78,8 @@ def test_cli_generate_smoke(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     """Test cli generate smoke.
 
     Args:
-        tmp_path: Argument value.
-        capsys: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
+        capsys: Fixture for capturing stdout and stderr output.
     """
     spec = tmp_path / "spec.json"
     out = tmp_path / "out"
@@ -98,8 +98,8 @@ def test_cli_reports_invalid_spec(tmp_path: Path, capsys: pytest.CaptureFixture[
     """Test cli reports invalid spec.
 
     Args:
-        tmp_path: Argument value.
-        capsys: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
+        capsys: Fixture for capturing stdout and stderr output.
     """
     out = tmp_path / "out"
 
@@ -114,8 +114,8 @@ def test_cli_overwrite_behavior(tmp_path: Path, capsys: pytest.CaptureFixture[st
     """Test cli overwrite behavior.
 
     Args:
-        tmp_path: Argument value.
-        capsys: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
+        capsys: Fixture for capturing stdout and stderr output.
     """
     spec = tmp_path / "spec.json"
     out = tmp_path / "out"
@@ -137,7 +137,7 @@ def test_generation_is_idempotent(tmp_path: Path) -> None:
     """Test generation is idempotent.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     spec = tmp_path / "spec.json"
     out_a = tmp_path / "out_a"

@@ -10,7 +10,7 @@ def test_generated_package_integrity(tmp_path: Path) -> None:
     """Test generated package integrity.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     ir = ApiIR(
         title="Integrity API",

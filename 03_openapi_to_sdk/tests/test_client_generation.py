@@ -10,7 +10,7 @@ def test_generated_client_contains_operation_methods(tmp_path: Path) -> None:
     """Test generated client contains operation methods.
 
     Args:
-        tmp_path: Argument value.
+        tmp_path: Temporary directory path provided by pytest.
     """
     ir = ApiIR(
         title="Pets",

@@ -5,8 +5,14 @@ from typing import {{ typing_imports | join(", ") }}
 
 {% endif -%}
 {% if stdlib_imports -%}
-from datetime import {{ stdlib_imports | join(", ") }}
+{% for module, symbols in stdlib_imports.items() -%}
+{% if symbols -%}
+from {{ module }} import {{ symbols | join(", ") }}
+{% else -%}
+import {{ module }}
+{% endif %}
 
+{% endfor -%}
 {% endif -%}
 from pydantic import BaseModel, ConfigDict, Field
 

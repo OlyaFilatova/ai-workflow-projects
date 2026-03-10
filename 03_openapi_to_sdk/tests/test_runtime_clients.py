@@ -14,40 +14,40 @@ from openapi_to_sdk.runtime.errors import BadRequestError, NotFoundError
 
 @dataclass(slots=True)
 class ParsedModel:
-    """Represent ParsedModel.
+    """Parsed success payload model used in runtime-client tests.
 
     Attributes:
-        name: Attribute value.
+        name: Parsed `name` value from a successful JSON response.
     """
     name: str
 
     @classmethod
     def model_validate(cls, payload: dict[str, str]) -> ParsedModel:
-        """Run model validate.
+        """Construct a parsed model instance from a response payload.
 
         Args:
-            cls: Argument value.
-            payload: Argument value.
+            cls: Model class used to construct the parsed object.
+            payload: Parameterized input payload for the test case.
         """
         return cls(name=payload["name"])
 
 
 @dataclass(slots=True)
 class ParsedError:
-    """Represent ParsedError.
+    """Parsed error payload model used in runtime-client tests.
 
     Attributes:
-        code: Attribute value.
+        code: Parsed error code value from an error JSON response.
     """
     code: str
 
     @classmethod
     def model_validate(cls, payload: dict[str, str]) -> ParsedError:
-        """Run model validate.
+        """Construct a parsed model instance from a response payload.
 
         Args:
-            cls: Argument value.
-            payload: Argument value.
+            cls: Model class used to construct the parsed object.
+            payload: Parameterized input payload for the test case.
         """
         return cls(code=payload["code"])
 
@@ -59,10 +59,10 @@ def test_sync_request_construction_and_auth_injection() -> None:
     captured_body = ""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Run handler.
+        """Build a mocked HTTP response for the incoming request.
 
         Args:
-            request: Argument value.
+            request: Incoming HTTP request provided by MockTransport.
         """
         nonlocal captured_url, captured_headers, captured_body
         captured_url = str(request.url)
@@ -100,10 +100,10 @@ def test_sync_auth_override_beats_default() -> None:
     captured_headers: dict[str, str] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        """Run handler.
+        """Build a mocked HTTP response for the incoming request.
 
         Args:
-            request: Argument value.
+            request: Incoming HTTP request provided by MockTransport.
         """
         nonlocal captured_headers
         captured_headers = dict(request.headers)
@@ -131,10 +131,10 @@ def test_sync_auth_override_beats_default() -> None:
 def test_response_parsing_and_204_handling() -> None:
     """Test response parsing and 204 handling."""
     def handler(request: httpx.Request) -> httpx.Response:
-        """Run handler.
+        """Build a mocked HTTP response for the incoming request.
 
         Args:
-            request: Argument value.
+            request: Incoming HTTP request provided by MockTransport.
         """
         if request.url.path.endswith("/one"):
             return httpx.Response(200, json={"name": "one"})
@@ -154,10 +154,10 @@ def test_response_parsing_and_204_handling() -> None:
 def test_error_mapping_and_parsed_error_payload() -> None:
     """Test error mapping and parsed error payload."""
     def handler(request: httpx.Request) -> httpx.Response:
-        """Run handler.
+        """Build a mocked HTTP response for the incoming request.
 
         Args:
-            request: Argument value.
+            request: Incoming HTTP request provided by MockTransport.
         """
         if request.url.path.endswith("/missing"):
             return httpx.Response(404, json={"code": "not_found"})
@@ -186,12 +186,12 @@ def test_async_request_construction_and_response_parse() -> None:
     captured_url = ""
 
     async def run() -> ParsedModel:
-        """Run run."""
+        """Execute the async request flow used by this test."""
         def handler(request: httpx.Request) -> httpx.Response:
-            """Run handler.
+            """Build a mocked HTTP response for the incoming request.
 
             Args:
-                request: Argument value.
+                request: Incoming HTTP request provided by MockTransport.
             """
             nonlocal captured_url
             captured_url = str(request.url)
