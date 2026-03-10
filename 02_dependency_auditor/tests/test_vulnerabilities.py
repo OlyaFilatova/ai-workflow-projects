@@ -4,13 +4,14 @@ import json
 import tempfile
 from pathlib import Path
 from unittest import mock
+from unittest.mock import MagicMock
 
 from auditpy.models import PackageNode, Severity
 from auditpy.vulnerabilities import scan_vulnerabilities
 
 
 @mock.patch("auditpy.vulnerabilities._query_osv_batch")
-def test_cache_miss_then_hit(mock_query) -> None:
+def test_cache_miss_then_hit(mock_query: MagicMock) -> None:
     mock_query.return_value = [{"vulns": [{"id": "OSV-123", "severity": [{"score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/9.8"}]}]}]
     nodes = [PackageNode(name="requests", version="2.31.0")]
 
@@ -30,7 +31,7 @@ def test_cache_miss_then_hit(mock_query) -> None:
 
 
 @mock.patch("auditpy.vulnerabilities._query_osv_batch")
-def test_graceful_network_failure_with_stale_cache(mock_query) -> None:
+def test_graceful_network_failure_with_stale_cache(mock_query: MagicMock) -> None:
     mock_query.side_effect = TimeoutError("timeout")
     nodes = [PackageNode(name="urllib3", version="2.2.0")]
 
@@ -62,7 +63,7 @@ def test_graceful_network_failure_with_stale_cache(mock_query) -> None:
 
 
 @mock.patch("auditpy.vulnerabilities._query_osv_batch")
-def test_timeout_without_cache_returns_warning_and_no_findings(mock_query) -> None:
+def test_timeout_without_cache_returns_warning_and_no_findings(mock_query: MagicMock) -> None:
     mock_query.side_effect = TimeoutError("timeout")
     nodes = [PackageNode(name="requests", version="2.31.0")]
 
@@ -75,7 +76,7 @@ def test_timeout_without_cache_returns_warning_and_no_findings(mock_query) -> No
 
 
 @mock.patch("auditpy.vulnerabilities._query_osv_batch")
-def test_findings_order_is_deterministic(mock_query) -> None:
+def test_findings_order_is_deterministic(mock_query: MagicMock) -> None:
     mock_query.return_value = [
         {
             "vulns": [

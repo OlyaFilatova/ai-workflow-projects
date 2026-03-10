@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from typing import Callable, cast
 
 from auditpy.config import ScanConfig
 from auditpy.licenses import evaluate_licenses
@@ -107,4 +108,5 @@ def main(argv: list[str] | None = None) -> int:
     """
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    command = cast(Callable[[argparse.Namespace], int], args.func)
+    return command(args)
