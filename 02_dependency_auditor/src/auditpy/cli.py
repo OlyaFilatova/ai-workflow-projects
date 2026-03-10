@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 from auditpy.config import ScanConfig
 from auditpy.licenses import evaluate_licenses

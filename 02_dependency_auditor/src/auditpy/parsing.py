@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Set
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AbstractSet, cast
+from typing import cast
 
 from packaging.markers import default_environment
 from packaging.requirements import InvalidRequirement, Requirement
@@ -115,7 +116,7 @@ def _parse_file(
         except InvalidRequirement as exc:
             raise RequirementsParseError(f"{resolved}:{index} invalid requirement: {stripped}") from exc
 
-        marker_environment = cast(dict[str, str | AbstractSet[str]], default_environment())
+        marker_environment = cast(dict[str, str | Set[str]], default_environment())
         if req.marker is not None and not req.marker.evaluate(marker_environment):
             warnings.append(f"{resolved}:{index} skipped by environment marker: {stripped}")
             continue
