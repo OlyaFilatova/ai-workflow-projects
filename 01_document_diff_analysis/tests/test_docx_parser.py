@@ -6,6 +6,7 @@ from pathlib import Path
 
 from docx import Document as DocxDocument
 
+from docdiff.model import HeadingBlock, ListBlock, TableBlock
 from docdiff.parsers import parse_docx_file
 
 
@@ -26,7 +27,7 @@ def _build_docx_fixture(path: Path) -> None:
     table.rows[1].cells[1].text = "ready"
 
     doc.add_paragraph("Closing paragraph for additional detail.")
-    doc.save(path)
+    doc.save(str(path))
 
 
 def test_docx_parser_handles_mixed_content(tmp_path: Path) -> None:
@@ -43,7 +44,13 @@ def test_docx_parser_handles_mixed_content(tmp_path: Path) -> None:
         "table",
         "paragraph",
     ]
-    assert parsed.blocks[0].text == "Release Notes"
-    assert parsed.blocks[2].items[0] == "Normalize all textual input"
-    assert parsed.blocks[3].header == ["Module", "Status"]
-    assert parsed.blocks[3].rows == [["docx", "ready"]]
+    heading_block = parsed.blocks[0]
+    assert isinstance(heading_block, HeadingBlock)
+    assert heading_block.text == "Release Notes"
+    list_block = parsed.blocks[2]
+    assert isinstance(list_block, ListBlock)
+    assert list_block.items[0] == "Normalize all textual input"
+    table_block = parsed.blocks[3]
+    assert isinstance(table_block, TableBlock)
+    assert table_block.header == ["Module", "Status"]
+    assert table_block.rows == [["docx", "ready"]]

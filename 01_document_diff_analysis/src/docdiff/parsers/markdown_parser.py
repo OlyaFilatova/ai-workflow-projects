@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
+from docdiff.model import Block, Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
 from .common import make_block_id, normalize_text
 from .io import read_utf8_file
@@ -45,7 +45,7 @@ def _split_table_row(line: str) -> list[str]:
 
 def _flush_paragraph_block(
     paragraph_lines: list[str],
-    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
+    blocks: list[Block],
 ) -> list[str]:
     """Emit a buffered paragraph block and clear its line buffer.
 
@@ -69,7 +69,7 @@ def _flush_paragraph_block(
 
 
 def _append_heading_block(
-    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
+    blocks: list[Block],
     level: int,
     text_value: str,
 ) -> None:
@@ -94,7 +94,7 @@ def _append_heading_block(
 def _consume_table_block(
     lines: list[str],
     start_index: int,
-    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
+    blocks: list[Block],
 ) -> int:
     """Parse a markdown table and append it as one block.
 
@@ -125,7 +125,7 @@ def _consume_list_block(
     lines: list[str],
     start_index: int,
     ordered: bool,
-    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock],
+    blocks: list[Block],
 ) -> int:
     """Parse a contiguous markdown list and append it as one block.
 
@@ -172,7 +172,7 @@ def parse_markdown(text: str) -> Document:
     lines = text.replace(_WINDOWS_NEWLINE, _UNIX_NEWLINE).replace(_LEGACY_MAC_NEWLINE, _UNIX_NEWLINE).split(
         _UNIX_NEWLINE
     )
-    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock] = []
+    blocks: list[Block] = []
     paragraph_buffer: list[str] = []
     line_index = 0
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup, Tag
 
-from docdiff.model import Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
+from docdiff.model import Block, Document, HeadingBlock, ListBlock, ParagraphBlock, TableBlock
 
 from .common import make_block_id, normalize_text
 from .io import read_utf8_file
@@ -144,7 +144,7 @@ def parse_html(text: str) -> Document:
         noise.decompose()
 
     root = soup.body if soup.body else soup
-    blocks: list[HeadingBlock | ParagraphBlock | ListBlock | TableBlock] = []
+    blocks: list[Block] = []
 
     for tag in root.descendants:
         if not isinstance(tag, Tag) or tag.name not in _BLOCK_TAGS:
