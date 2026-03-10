@@ -88,6 +88,15 @@ jobs:
             exit 1
           fi
 
+          if grep -q '^\[tool\.mypy\]' pyproject.toml 2>/dev/null; then
+            if python -m mypy --version >/dev/null 2>&1; then
+              python -m mypy .
+            else
+              echo "mypy is configured for ${PWD} but is not installed."
+              exit 1
+            fi
+          fi
+
   test:
     name: Test (${{ matrix.project }})
     runs-on: ubuntu-latest
